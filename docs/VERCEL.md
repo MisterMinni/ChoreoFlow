@@ -56,16 +56,17 @@ Die lokale Vercel-CLI 41.6.2 konnte bei der Bestandspruefung keinen Benutzer lad
 
 ## Bereitgestellter und gepruefter Stand
 
-- Quellcommit: `669e38fb9cea36ab55ed2fb63abed5962a3b8467`, gepusht; [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1).
-- Manuell erzeugtes Preview-Deployment: `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu`, **READY**, Builddauer 49 Sekunden, exakt dieser Commit.
-- [Unveraenderliche Deployment-URL](https://choreoflow-75cbckwvz-bastian-minnichs-projects.vercel.app).
-- [Stabiler Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app), auch als Supabase Auth Site URL gesetzt. Fuer Browserdaten ist dieser gleichbleibende Origin gegenueber wechselnden Deployment-URLs vorzuziehen.
-- [GitHub-Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082): erfolgreich; 50/50 Tests sowie 10 bestandene Browserpruefungen und ein ausdruecklich uebersprungener Cloud-Viewer-Test ohne Cloudkonfiguration.
-- Der spaetere reine Dokumentationscommit `cd5a094` ist ebenfalls gepusht; [CI 38869322092](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38869322092) ist erfolgreich. Die bereitgestellte Quell-Preview bleibt unveraendert auf `669e38f`.
+- App-Quellcommit: `0a8d962749f4a551657f7ce5c5075efe72655779`, gepusht; [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1).
+- Manuell erzeugte Preview: `dpl_CatNxFUoK1L9Q87osSw7EZ61jdtC`, **READY**, Builddauer 56 Sekunden, exakt dieser Commit.
+- [Unveraenderliche Deployment-URL](https://choreoflow-q6ve5bfpw-bastian-minnichs-projects.vercel.app).
+- [Stabiler Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app), weiterhin Supabase Auth Site URL.
+- [GitHub-Linux-CI 38875139539](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38875139539): erfolgreich. Lokale Abnahme: 86 Fachtests, 14 Browserablaeufe. Der simulierte Viewer wird in CI ohne Cloudkonfiguration ausgelassen.
+- Spaetere reine Test-/Dokumentationskorrekturen veraendern den bereitgestellten Appstand nicht.
+- Vorheriger funktionierender Rueckfallstand: `669e38f` / `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu`.
 
-Der normale Browserzugriff landet weiterhin bei Vercel Login. Authentifizierte Abrufe von `/` und `/share` lieferten jeweils HTTP 200 mit echter Expo-HTML und Assets. Das belegt die Bereitstellung, ersetzt aber keinen vollstaendigen Online-Auth- oder Zuschauertest. Auch der auf App-Ebene anonyme Viewer bleibt auf dieser Preview durch Vercel-SSO geschuetzt.
+Authentifizierte Abrufe von `/` und `/share` liefern HTTP 200 mit echten Expo-Dateien. Vercel-SSO bleibt unveraendert aktiv, auch vor dem auf App-Ebene anonymen Viewer. Die reale Login-/Freigabe-/Widerrufpruefung fand lokal gegen das echte Supabase-Testprojekt statt; diese HTTP-Abrufe sind kein weiterer vollstaendiger Online-Browsertest. Die Production-Domain wurde nicht aktualisiert.
 
-Ein vorheriger API-Versuch mit `target: "preview"` wurde mit HTTP 400 abgewiesen und erzeugte kein Deployment. Das erfolgreiche Deployment verwendete `target: "staging"`.
+Das Deployment verwendet `target: "staging"`, den von dieser API akzeptierten Preview-Wert. Git-Autodeploy bleibt deaktiviert.
 
 ## Ausgangszustand und Pruefgrenzen
 

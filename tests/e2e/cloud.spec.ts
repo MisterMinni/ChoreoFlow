@@ -14,6 +14,8 @@ test("Freigaben zeigen optionale Anmeldung ohne das lokale Projekt zu wechseln",
     .getByRole("button", { name: /Projekt öffnen:/ })
     .first()
     .click();
+  // Router navigation settles asynchronously after the click, especially in CI.
+  await expect(page).toHaveURL(/\/editor\/[^/]+$/);
   const editorUrl = page.url();
   await page.getByRole("button", { name: "Projektmenü", exact: true }).click();
   await page.getByRole("button", { name: "Freigaben", exact: true }).click();

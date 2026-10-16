@@ -20,13 +20,13 @@ Durchgängiger Entwicklungsstand mit fortgesetzter Editorarbeit. Einrichtung und
 
 TypeScript und ESLint erfolgreich, **86/86 Tests** (46 Kern, 33 Daten, 4 PDF, 3 Audio), frischer Webexport und **14/14 Browsertests** bestanden. Reale Cloudprobe zusätzlich mit synthetischen Daten: Anmeldung/Reload, Serverstände 1 bis 3, unveränderliche Veröffentlichung, getrennter anonymer Viewer und zwei erfolgreiche Linkwiderrufe. Kontowechsel, verspätete Downloads und veraltete Editoren sind gegen unbemerkte Überschreibung abgesichert. Details: `ACCEPTANCE.md`.
 
-## Bisher reviewbarer und bereitgestellter Stand
+## Reviewbarer und bereitgestellter Stand
 
-Commit `669e38fb9cea36ab55ed2fb63abed5962a3b8467` ist gepusht: [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1). [GitHub-Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082) ist erfolgreich: 50/50 Tests; Browser 10 bestanden, ein Cloud-Viewer-Test ohne Cloudkonfiguration ausdrücklich übersprungen. Lokal mit Testkonfiguration: 11/11 Browsertests bestanden.
+App-Quellcommit `0a8d962749f4a551657f7ce5c5075efe72655779` ist gepusht: [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1). [GitHub-Linux-CI 38875139539](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38875139539) ist erfolgreich: 86 Fachtests, 13 Browserabläufe bestanden, 1 Viewer-Test ohne Cloudkonfiguration übersprungen. Lokal: 86/86 Fachtests und 14/14 Browserabläufe; CI lässt den simulierten Cloud-Viewer ohne Cloudkonfiguration ausdrücklich aus.
 
-Der spätere reine Dokumentationscommit `cd5a094` ist ebenfalls gepusht; [CI 38869322092](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38869322092) ist erfolgreich. Die bereitgestellte Quell-Preview bleibt auf `669e38f`.
+Die [manuelle Preview](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app) läuft als `dpl_CatNxFUoK1L9Q87osSw7EZ61jdtC` für exakt diesen App-Commit, READY nach 56 Sekunden Buildzeit. [Unveränderliche Deployment-URL](https://choreoflow-q6ve5bfpw-bastian-minnichs-projects.vercel.app). Authentifizierte Abrufe von `/` und `/share` liefern HTTP 200 mit echten Expo-Dateien. **Vercel-SSO schützt weiterhin die gesamte Preview, auch den auf App-Ebene anonymen Viewer.** Die Produktionsdomain `choreoflow.vercel.app` wurde nicht aktualisiert. Details: `ACCEPTANCE.md` und `VERCEL.md`.
 
-Die [manuelle Preview](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app) läuft als `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu` für exakt diesen Commit, READY nach 49 Sekunden Buildzeit. Authentifizierte Abrufe von `/` und `/share` liefern HTTP 200 mit echten Expo-Dateien. **Vercel-SSO schützt weiterhin die gesamte Preview, auch den auf App-Ebene anonymen Viewer.** Die Produktionsdomain `choreoflow.vercel.app` wurde nicht aktualisiert. Details und Prüfgrenzen: `ACCEPTANCE.md` und `VERCEL.md`.
+Spätere reine Test-/Dokumentationskorrekturen ändern diesen bereitgestellten Appstand nicht. Als vorheriger funktionierender Rückfallstand bleibt `669e38f` / `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu` verfügbar.
 
 ## Meilensteine aus der Spezifikation
 
