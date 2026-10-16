@@ -62,6 +62,55 @@ for (const [name, makeStore] of [
     assert.equal((await first.list())[0]!.present.name, 'Edit after explicit reload');
     await store.close?.();
   });
+  for (const download of ['already acknowledged', 'new remote revision'] as const) {
+    test(`${name}: ${download} download cannot clear a stale editor conflict`, async () => {
+      const store = makeStore();
+      try {
+        const staleEditor = new LocalProjectRepository(store, cloudUser);
+        const otherEditor = new LocalProjectRepository(store, cloudUser);
+        const project = createDemoProject('line');
+        await staleEditor.acceptRemote(project, 1, 'cloud-project-a');
+        const [staleVersion] = await staleEditor.list();
+        const [otherVersion] = await otherEditor.list();
+        const newer = editName(otherVersion!, 'Important work from another editor');
+        const rejectedDraft = commitProject(staleVersion!, {
+          ...staleVersion!.present,
+          stage: { ...staleVersion!.present.stage, width: 13 },
+        });
+        if (download === 'already acknowledged') {
+          await otherEditor.save(newer);
+          const [entry] = await otherEditor.pending();
+          await otherEditor.acknowledge(entry!.id, 2);
+          await assert.rejects(staleEditor.save(rejectedDraft), LocalConflictError);
+        }
+        // A background download returns no editor history. Neither persisting a
+        // new revision nor accepting the same acknowledged revision reloads it.
+        await staleEditor.acceptRemote(newer.present, 2, 'cloud-project-a');
+        await assert.rejects(staleEditor.save(rejectedDraft), LocalConflictError);
+        const laterDraft = commitProject(rejectedDraft, {
+          ...rejectedDraft.present,
+          stage: { ...rejectedDraft.present.stage, width: 14 },
+        });
+        assert.equal(laterDraft.present.revision, newer.present.revision + 1);
+        await assert.rejects(staleEditor.save(laterDraft), LocalConflictError);
+        const preserved = await staleEditor.load();
+        assert.deepEqual(preserved.projects[0], newer.present);
+        assert.deepEqual(preserved.histories[project.id], download === 'already acknowledged' ? newer : createHistory(newer.present));
+        assert.equal(preserved.cloudRevisions[project.id], 2);
+        assert.deepEqual(preserved.outbox, []);
+
+        // Returning the current editor history explicitly establishes the new
+        // baseline, so an edit after reloading can be persisted normally.
+        const [reloaded] = await staleEditor.list();
+        const next = editName(reloaded!, 'Edit after explicit reload');
+        await staleEditor.save(next);
+        assert.deepEqual((await staleEditor.load()).histories[project.id], next);
+        const [entry] = await staleEditor.pending();
+        assert.equal(entry!.baseRevision, 2);
+        assert.deepEqual(entry!.snapshot, next.present);
+      } finally { await store.close?.(); }
+    });
+  }
   test(`${name}: identities isolate projects, credentials are not part of the workspace`, async () => {
     const store = makeStore();
     const local = new LocalProjectRepository(store); const cloud = new LocalProjectRepository(store, cloudUser); const other = new LocalProjectRepository(store, anotherUser);
@@ -87,6 +136,28 @@ for (const [name, makeStore] of [
     await assert.rejects(repository.load(), /Speicherversion/);
     const preserved = await store.transact('local:development', value => ({ value, result: value }));
     assert.deepEqual(preserved, { schemaVersion: 99, important: 'keep me' }); await store.close?.();
+  });
+  test(`${name}: delayed downloads cannot roll back a newer acknowledged project`, async () => {
+    const store = makeStore(); const repository = new LocalProjectRepository(store, cloudUser);
+    const first = createDemoProject('line');
+    await repository.acceptRemote(first, 1, 'cloud-project-a');
+    const [loaded] = await repository.list();
+    const edited = commitProject(loaded!, {
+      ...loaded!.present,
+      name: 'Newer acknowledged work',
+      audio: { assets: [{ id: 'local-audio', name: 'Rehearsal.wav', mimeType: 'audio/wav', durationSeconds: 10, sizeBytes: 2000, localUri: 'file:///private/rehearsal.wav' }], clips: [] },
+    });
+    await repository.save(edited);
+    const [entry] = await repository.pending(); await repository.acknowledge(entry!.id, 2);
+    await assert.rejects(repository.acceptRemote(first, 1, 'cloud-project-a'), LocalConflictError);
+    assert.deepEqual((await repository.list())[0], edited);
+    assert.equal((await repository.load()).cloudRevisions[first.id], 2);
+    // Uploads strip device-local paths. Re-downloading that same revision must
+    // preserve this device's original media reference and undo history.
+    const remoteSnapshot = structuredClone(edited.present); delete remoteSnapshot.audio.assets[0]!.localUri;
+    await repository.acceptRemote(remoteSnapshot, 2, 'cloud-project-a');
+    assert.deepEqual((await repository.list())[0], edited);
+    await store.close?.();
   });
 }
 

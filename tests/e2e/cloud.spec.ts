@@ -141,4 +141,16 @@ test("Zuschaueransicht spielt einen simulierten Probenstand ab und erlaubt nur H
   expect(rpcRequests).toHaveLength(1);
   expect(rpcRequests[0]!.url).not.toContain(token);
   expect(rpcRequests[0]!.body).toEqual({ p_token: token });
+  await expect(page).toHaveURL(new RegExp(`/share#token=${token}$`));
+  await page.reload();
+  await expect(page.getByText(snapshot.name, { exact: true })).toBeVisible();
+  expect(rpcRequests).toHaveLength(2);
+  // A different hash in the same tab must discard the previous publication.
+  await page.goto("/share#token=invalid-fragment");
+  await expect(page.getByText(/Freigabelink ist unvollständig/)).toBeVisible();
+  await expect(page.getByTestId("stage-2d")).toHaveCount(0);
+  await page.goto(`/share#token=${token}`);
+  await expect(page.getByText(snapshot.name, { exact: true })).toBeVisible();
+  await expect(page.getByText(/Freigabelink ist unvollständig/)).toHaveCount(0);
+  expect(rpcRequests).toHaveLength(3);
 });

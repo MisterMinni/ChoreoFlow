@@ -62,6 +62,10 @@ export function applyProjectCommand(project: Project, command: ProjectCommand): 
 export function createHistory(project: Project): ProjectHistory { assertValidProject(project); return { present: clone(project), undoStack: [], redoStack: [] }; }
 export function commitProject(history: ProjectHistory, next: Project, actorId = 'local-dev'): ProjectHistory {
   const command = createProjectCommand(history.present, next, actorId);
+  return commitCommand(history, command);
+}
+/** Commit a previously prepared command as one serializable undo step. */
+export function commitCommand(history: ProjectHistory, command: ProjectCommand): ProjectHistory {
   if (!command.changes.length) return history;
   return { present: applyProjectCommand(history.present, command), undoStack: [...history.undoStack, command].slice(-100), redoStack: [] };
 }

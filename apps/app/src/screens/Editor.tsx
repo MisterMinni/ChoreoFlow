@@ -1,4 +1,11 @@
-import React, { Suspense, lazy, useMemo, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   View,
   ScrollView,
@@ -23,16 +30,17 @@ import {
   X,
   Download,
   Grid3X3,
+  Layers,
 } from "lucide-react-native";
 import { Button, Card, Field, Label, useTheme } from "@choreoflow/ui";
 import {
   commitProject,
+  commitFormationEdit,
   undo,
   redo,
   createId,
   generateTemplate,
   formationStartTime,
-  projectDuration,
   evaluateScene,
   formatCounts,
   groupPosition,
@@ -41,12 +49,15 @@ import {
   type Vec3,
   type GroupMotion,
   type TemplateType,
+  type ProjectHistory,
+  type FormationEditPlan,
 } from "@choreoflow/core";
 import { useApp } from "../state";
 import { Stage2D } from "../components/Stage2D";
 import { templateLabels } from "./Library";
 import ConflictPanel from "../components/ConflictPanel";
 import { CloudPanel } from "../components/CloudPanel";
+import { FormationsPanel } from "../components/FormationsPanel";
 import { usePlayback, MusicPanel } from "../audio";
 import { saveProjectFile, exportPng } from "../transfer";
 const Stage3D = lazy(() => import("../components/Stage3D"));
@@ -82,7 +93,8 @@ export default function Editor() {
     wide = useWindowDimensions().width > 1000;
   const history = app.histories.find((h) => h.present.id === id),
     project = history?.present;
-  const [formationIndex, setFormationIndex] = useState(0),
+  const [formationId, setFormationId] = useState<string | null>(null),
+    [saving, setSaving] = useState(false),
     [selected, setSelected] = useState<string[]>([]),
     [mode, setMode] = useState<"2d" | "3d">("2d"),
     [camera, setCamera] = useState("angle"),
@@ -93,6 +105,15 @@ export default function Editor() {
     [note, setNote] = useState(""),
     [message, setMessage] = useState(""),
     [rename, setRename] = useState("");
+  const savingRef = useRef(false);
+  const pendingFocus = useRef<{
+    projectId: string;
+    revision: number;
+    formationId: string;
+  } | null>(null);
+  const selectionByCommand = useRef(
+    new Map<string, { before: string; after: string }>(),
+  );
   const {
     time,
     setTime,
@@ -107,6 +128,28 @@ export default function Editor() {
     () => (project ? evaluateScene(project, time) : null),
     [project, time],
   );
+  // Playback must see the new duration before seeking to a newly added/moved formation.
+  useEffect(() => {
+    if (!project) return;
+    const focus = pendingFocus.current;
+    if (
+      focus &&
+      focus.projectId === project.id &&
+      project.revision >= focus.revision
+    ) {
+      pendingFocus.current = null;
+      const target =
+        project.formations.find((f) => f.id === focus.formationId) ??
+        project.formations[0];
+      setFormationId(target.id);
+      setPlaying(false);
+      setTime(formationStartTime(project, target.id));
+    } else if (!project.formations.some((f) => f.id === formationId)) {
+      setFormationId(project.formations[0].id);
+      setPlaying(false);
+      setTime(0);
+    }
+  }, [project, formationId, setPlaying, setTime]);
   if (!project || !history || !scene)
     return (
       <SafeAreaView
@@ -121,12 +164,14 @@ export default function Editor() {
       </SafeAreaView>
     );
   const formation =
-      project.formations[
-        Math.min(formationIndex, project.formations.length - 1)
-      ],
+      project.formations.find((f) => f.id === formationId) ??
+      project.formations[0],
     transition = project.transitions.find(
       (v) => v.fromFormationId === formation.id,
     );
+  const formationIndex = project.formations.findIndex(
+    (f) => f.id === formation.id,
+  );
   const currentPerson = project.people.find((p) => p.id === selected[0]);
   const individualLocked =
     transition?.motions.some(
@@ -141,17 +186,82 @@ export default function Editor() {
       app.setError(e instanceof Error ? e.message : String(e));
     }
   };
+  const saveHistory = async (next: ProjectHistory, focusId?: string) => {
+    if (savingRef.current)
+      throw new Error(
+        "Bitte warte, bis die aktuelle Änderung gespeichert ist.",
+      );
+    if (next === history) return;
+    savingRef.current = true;
+    setSaving(true);
+    if (focusId) {
+      setPlaying(false);
+      pendingFocus.current = {
+        projectId: next.present.id,
+        revision: next.present.revision,
+        formationId: focusId,
+      };
+    }
+    try {
+      await app.save(next);
+    } catch (error) {
+      pendingFocus.current = null;
+      throw error;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+  const rememberSelection = (next: ProjectHistory, after: string) => {
+    const command = next.undoStack.at(-1);
+    if (command)
+      selectionByCommand.current.set(command.id, {
+        before: formation.id,
+        after,
+      });
+    if (selectionByCommand.current.size > 100) {
+      const oldest = selectionByCommand.current.keys().next().value;
+      if (oldest) selectionByCommand.current.delete(oldest);
+    }
+  };
+  const restoreHistory = (direction: "undo" | "redo") => {
+    if (savingRef.current) return;
+    void act(async () => {
+      const command = (
+        direction === "undo" ? history.undoStack : history.redoStack
+      ).at(-1);
+      const selection = command
+        ? selectionByCommand.current.get(command.id)
+        : undefined;
+      const next = direction === "undo" ? undo(history) : redo(history);
+      const requestedId =
+        selection?.[direction === "undo" ? "before" : "after"] ?? formation.id;
+      const target =
+        next.present.formations.find((f) => f.id === requestedId) ??
+        next.present.formations[
+          Math.min(formationIndex, next.present.formations.length - 1)
+        ];
+      if (direction === "redo" && selection && next.undoStack.at(-1)) {
+        selectionByCommand.current.set(next.undoStack.at(-1)!.id, selection);
+      }
+      await saveHistory(next, target.id);
+    });
+  };
   const edit = (fn: (draft: Project) => void) => {
+    if (savingRef.current) {
+      setMessage("Bitte warte, bis die aktuelle Änderung gespeichert ist.");
+      return;
+    }
     void act(async () => {
       const draft = structuredClone(project);
       fn(draft);
-      await app.save(commitProject(history, draft));
+      await saveHistory(commitProject(history, draft));
     });
   };
-  const chooseFormation = (index: number) => {
+  const chooseFormation = (nextId: string) => {
     setPlaying(false);
-    setFormationIndex(index);
-    setTime(formationStartTime(project, project.formations[index].id));
+    setFormationId(nextId);
+    setTime(formationStartTime(project, nextId));
   };
   const select = (personId: string) =>
     setSelected((previous) =>
@@ -170,7 +280,7 @@ export default function Editor() {
     }
     const ids = selected.includes(personId) ? selected : [personId];
     edit((draft) => {
-      const f = draft.formations[formationIndex];
+      const f = draft.formations.find((item) => item.id === formation.id)!;
       for (const target of ids) {
         const p = f.positions[target];
         f.positions[target] = { x: p.x + delta.x, y: p.y + delta.y, z: p.z };
@@ -178,11 +288,13 @@ export default function Editor() {
     });
   };
   const addFormation = () => {
+    if (savingRef.current || project.formations.length >= 200) return;
     const clone = structuredClone(formation),
       newId = createId("formation");
     clone.id = newId;
     clone.name = `Formation ${project.formations.length + 1}`;
-    edit((draft) => {
+    void act(async () => {
+      const draft = structuredClone(project);
       const previous = draft.formations.at(-1)!;
       draft.formations.push(clone);
       draft.transitions.push({
@@ -192,14 +304,22 @@ export default function Editor() {
         durationSeconds: 4,
         motions: [],
       });
+      const next = commitProject(history, draft);
+      rememberSelection(next, newId);
+      await saveHistory(next, newId);
     });
-    setFormationIndex(project.formations.length);
-    setTime(projectDuration(project) + 4);
-    setPlaying(false);
   };
+  const applyFormationEdit = (plan: FormationEditPlan) =>
+    act(async () => {
+      if (savingRef.current) return;
+      const next = commitFormationEdit(history, plan, { acceptImpact: true });
+      const target = plan.focusFormationId ?? next.present.formations[0].id;
+      rememberSelection(next, target);
+      await saveHistory(next, target);
+    });
   const applyTemplate = (kind: TemplateType) => {
     edit((draft) => {
-      const f = draft.formations[formationIndex];
+      const f = draft.formations.find((item) => item.id === formation.id)!;
       const ids = selected.length ? selected : project.people.map((p) => p.id);
       Object.assign(
         f.positions,
@@ -279,7 +399,8 @@ export default function Editor() {
       key={label + formation.id + selected.join() + value}
       label={label}
       editable={
-        !/^(Position|Blickrichtung|Haltedauer)/.test(label) || isAtFormation
+        !saving &&
+        (!/^(Position|Blickrichtung|Haltedauer)/.test(label) || isAtFormation)
       }
       defaultValue={String(value)}
       keyboardType="decimal-pad"
@@ -334,8 +455,9 @@ export default function Editor() {
                 formation.positions[currentPerson.id].x,
                 (n) =>
                   edit((d) => {
-                    d.formations[formationIndex].positions[currentPerson.id].x =
-                      n;
+                    d.formations.find((f) => f.id === formation.id)!.positions[
+                      currentPerson.id
+                    ].x = n;
                   }),
               )}
               {numeric(
@@ -343,8 +465,9 @@ export default function Editor() {
                 formation.positions[currentPerson.id].y,
                 (n) =>
                   edit((d) => {
-                    d.formations[formationIndex].positions[currentPerson.id].y =
-                      n;
+                    d.formations.find((f) => f.id === formation.id)!.positions[
+                      currentPerson.id
+                    ].y = n;
                   }),
               )}
               {numeric(
@@ -352,7 +475,9 @@ export default function Editor() {
                 formation.facing[currentPerson.id],
                 (n) =>
                   edit((d) => {
-                    d.formations[formationIndex].facing[currentPerson.id] = n;
+                    d.formations.find((f) => f.id === formation.id)!.facing[
+                      currentPerson.id
+                    ] = n;
                   }),
                 -720,
                 720,
@@ -365,7 +490,9 @@ export default function Editor() {
                 formation.holdSeconds,
                 (n) =>
                   edit((d) => {
-                    d.formations[formationIndex].holdSeconds = n;
+                    d.formations.find(
+                      (f) => f.id === formation.id,
+                    )!.holdSeconds = n;
                   }),
                 0.01,
                 600,
@@ -432,6 +559,7 @@ export default function Editor() {
       {panel === "Projektmenü" && (
         <>
           {[
+            "Formationen",
             "Bühne",
             "Besetzung",
             "Musik",
@@ -452,6 +580,16 @@ export default function Editor() {
             </Button>
           ))}
         </>
+      )}
+      {panel === "Formationen" && (
+        <FormationsPanel
+          key={`${project.id}:${project.revision}:${formation.id}`}
+          project={project}
+          formationId={formation.id}
+          busy={saving}
+          onPreview={() => setPlaying(false)}
+          onApply={applyFormationEdit}
+        />
       )}
       {panel === "Anordnen" && (
         <>
@@ -756,7 +894,7 @@ export default function Editor() {
           )}
           <MusicPanel
             project={project}
-            onChange={(next) => app.save(commitProject(history, next))}
+            onChange={(next) => saveHistory(commitProject(history, next))}
           />
         </>
       )}
@@ -878,15 +1016,15 @@ export default function Editor() {
           <ChevronDown size={17} color={t.muted} />
         </Pressable>
         <Button
-          disabled={!history.undoStack.length}
-          onPress={() => void act(() => app.save(undo(history)))}
+          disabled={saving || !history.undoStack.length}
+          onPress={() => restoreHistory("undo")}
           accessibilityLabel="Rückgängig"
         >
           <Undo2 size={18} color={t.text} />
         </Button>
         <Button
-          disabled={!history.redoStack.length}
-          onPress={() => void act(() => app.save(redo(history)))}
+          disabled={saving || !history.redoStack.length}
+          onPress={() => restoreHistory("redo")}
           accessibilityLabel="Wiederholen"
         >
           <Redo2 size={18} color={t.text} />
@@ -1050,7 +1188,7 @@ export default function Editor() {
                   <Play size={19} color="#fff" />
                 )}
               </Button>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }} testID="playback-time">
                 <Label size={17} bold>
                   {timeLabel(time)}{" "}
                   <Label muted size={12}>
@@ -1090,7 +1228,9 @@ export default function Editor() {
                   key={f.id}
                   accessibilityRole="button"
                   accessibilityLabel={`Formation auswählen: ${f.name}`}
-                  onPress={() => chooseFormation(index)}
+                  accessibilityState={{ selected: formation.id === f.id }}
+                  aria-pressed={formation.id === f.id}
+                  onPress={() => chooseFormation(f.id)}
                   style={{
                     width: 154,
                     padding: 12,
@@ -1114,7 +1254,7 @@ export default function Editor() {
                 </Pressable>
               ))}
               <Button
-                disabled={project.formations.length >= 200}
+                disabled={saving || project.formations.length >= 200}
                 onPress={addFormation}
                 accessibilityLabel="Formation hinzufügen"
                 style={{ width: 62 }}
@@ -1124,6 +1264,13 @@ export default function Editor() {
             </ScrollView>
           </Card>
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+            <Button
+              selected={panel === "Formationen"}
+              onPress={() => setPanel("Formationen")}
+            >
+              <Layers size={17} color={t.muted} />
+              <Label>Formationen</Label>
+            </Button>
             <Button onPress={() => setPanel("")}>
               <Move size={17} color={t.muted} />
               <Label>Position</Label>

@@ -7,3 +7,4 @@ export * from './projects';
 export * from './validation';
 export * from './history';
 export * from './conflicts';
+export * from './formations';

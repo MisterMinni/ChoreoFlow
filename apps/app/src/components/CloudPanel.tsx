@@ -14,6 +14,7 @@ type SavedLink = {
   revoked: boolean;
 };
 type Props = { project: Project; onMessage: (text: string) => void };
+type ActionScope = { generation: number; projectId: string };
 const errorText = (error: unknown) =>
   error instanceof Error
     ? error.message
@@ -42,6 +43,10 @@ export function CloudPanel({ project, onMessage }: Props) {
   } | null>(null);
   const running = useRef(false);
   const mounted = useRef(true);
+  const authGeneration = useRef(0);
+  const currentUserId = useRef<string | undefined>(undefined);
+  const currentProjectId = useRef(project.id);
+  currentProjectId.current = project.id;
   const fingerprint = useMemo(() => JSON.stringify(project), [project]);
   const userId = account?.id;
 
@@ -52,21 +57,36 @@ export function CloudPanel({ project, onMessage }: Props) {
         mounted.current = false;
       };
     let live = true;
+    let authEventReceived = false;
+    function updateAccount(next: Account | null) {
+      if (!live) return;
+      if (currentUserId.current !== next?.id) {
+        authGeneration.current += 1;
+        currentUserId.current = next?.id;
+        setUploaded(null);
+        setLinks([]);
+        setFreshLink(null);
+        setStatus("");
+        setPassword("");
+      }
+      setAccount(next);
+    }
+    const { data: subscription } = service.client.auth.onAuthStateChange(
+      (_event, session) => {
+        authEventReceived = true;
+        updateAccount(session?.user ?? null);
+      },
+    );
     void service.client.auth
       .getSession()
       .then(({ data, error }) => {
-        if (!live) return;
+        if (!live || authEventReceived) return;
         if (error) setStatus(error.message);
-        setAccount(data.session?.user ?? null);
+        updateAccount(data.session?.user ?? null);
       })
       .catch((error) => {
-        if (live) setStatus(errorText(error));
+        if (live && !authEventReceived) setStatus(errorText(error));
       });
-    const { data: subscription } = service.client.auth.onAuthStateChange(
-      (_event, session) => {
-        if (live) setAccount(session?.user ?? null);
-      },
-    );
     return () => {
       live = false;
       mounted.current = false;
@@ -76,6 +96,17 @@ export function CloudPanel({ project, onMessage }: Props) {
 
   useEffect(() => {
     let live = true;
+    const generation = authGeneration.current;
+    const projectId = project.id;
+    function isCurrentSettingsRead() {
+      return (
+        live &&
+        mounted.current &&
+        generation === authGeneration.current &&
+        userId === currentUserId.current &&
+        projectId === currentProjectId.current
+      );
+    }
     setUploaded(null);
     setLinks([]);
     setFreshLink(null);
@@ -86,13 +117,13 @@ export function CloudPanel({ project, onMessage }: Props) {
             repository.getSetting<Uploaded>(`upload:${project.id}`),
             repository.getSetting<SavedLink[]>(`links:${project.id}`),
           ]);
-          if (live) {
+          if (isCurrentSettingsRead()) {
             setUploaded(saved ?? null);
             setLinks(savedLinks ?? []);
           }
         })
         .catch((error) => {
-          if (live) setStatus(errorText(error));
+          if (isCurrentSettingsRead()) setStatus(errorText(error));
         });
     }
     return () => {
@@ -100,35 +131,51 @@ export function CloudPanel({ project, onMessage }: Props) {
     };
   }, [userId, project.id]);
 
-  async function run(action: () => Promise<void>) {
+  function isCurrent(scope: ActionScope) {
+    return (
+      mounted.current &&
+      scope.generation === authGeneration.current &&
+      scope.projectId === currentProjectId.current
+    );
+  }
+  function requireCurrent(scope: ActionScope) {
+    if (!isCurrent(scope))
+      throw new Error(
+        "Konto oder Projekt gewechselt. Bitte die Cloud-Aktion erneut starten.",
+      );
+  }
+  async function run(action: (scope: ActionScope) => Promise<void>) {
     if (running.current) return;
     running.current = true;
     setBusy(true);
     setStatus("");
+    const scope = { generation: authGeneration.current, projectId: project.id };
     try {
-      await action();
+      await action(scope);
     } catch (error) {
-      if (mounted.current) setStatus(errorText(error));
+      if (isCurrent(scope)) setStatus(errorText(error));
     } finally {
       running.current = false;
       if (mounted.current) setBusy(false);
     }
   }
-  function report(message: string) {
-    if (mounted.current) {
+  function report(message: string, scope: ActionScope) {
+    if (isCurrent(scope)) {
       setStatus(message);
       onMessage(message);
     }
   }
 
-  async function upload() {
+  async function upload(scope: ActionScope) {
     if (!service || !account) return;
     const snapshot = structuredClone(project);
     const sourceFingerprint = JSON.stringify(snapshot);
     const repository = await getRepository({
       identity: { kind: "cloud", userId: account.id },
     });
+    requireCurrent(scope);
     const previous = await service.sync(repository);
+    requireCurrent(scope);
     if (previous.conflicts.includes(snapshot.id))
       throw new Error(
         "Der Cloud-Stand wurde anderswo geändert. Deine lokale Arbeit bleibt erhalten. Exportiere die Projektdatei; ein Abgleich der Stände ist noch erforderlich.",
@@ -136,12 +183,14 @@ export function CloudPanel({ project, onMessage }: Props) {
     const existing = (await repository.list()).find(
       (item) => item.present.id === snapshot.id,
     );
+    requireCurrent(scope);
     await repository.save(
       existing
         ? commitProject(existing, snapshot, account.id)
         : createHistory(snapshot),
     );
     const result = await service.sync(repository);
+    requireCurrent(scope);
     if (result.conflicts.includes(snapshot.id))
       throw new Error(
         "Konflikt: Der Server hat einen neueren Stand. Die lokale Kopie und die ausstehenden Änderungen bleiben erhalten. Bitte eine Projektdatei exportieren.",
@@ -157,13 +206,14 @@ export function CloudPanel({ project, onMessage }: Props) {
       throw new Error("Der Serverstand konnte nicht bestätigt werden.");
     const record = { id, revision, fingerprint: sourceFingerprint };
     await repository.setSetting(`upload:${snapshot.id}`, record);
-    if (mounted.current) setUploaded(record);
+    if (isCurrent(scope)) setUploaded(record);
     report(
       `Im Testkonto gesichert · Serverstand ${revision}. Dein lokaler Editor bleibt unverändert.`,
+      scope,
     );
   }
 
-  async function publish() {
+  async function publish(scope: ActionScope) {
     if (
       !service ||
       !account ||
@@ -184,13 +234,20 @@ export function CloudPanel({ project, onMessage }: Props) {
       throw new Error(
         "Bitte zuerst die ausstehenden Änderungen synchronisieren.",
       );
+    requireCurrent(scope);
     const publication = (await service.publishProject(
       uploaded.id,
       uploaded.revision,
+      account.id,
     )) as { id?: string };
     if (!publication?.id)
       throw new Error("Die Veröffentlichung wurde nicht bestätigt.");
-    const link = (await service.createShareLink(publication.id)) as {
+    requireCurrent(scope);
+    const link = (await service.createShareLink(
+      publication.id,
+      undefined,
+      account.id,
+    )) as {
       id?: string;
       token?: string;
       expires_at?: string;
@@ -212,7 +269,7 @@ export function CloudPanel({ project, onMessage }: Props) {
       (await repository.getSetting<SavedLink[]>(`links:${project.id}`)) ?? [];
     const updatedLinks = [record, ...savedLinks];
     await repository.setSetting(`links:${project.id}`, updatedLinks);
-    if (mounted.current) {
+    if (isCurrent(scope)) {
       setLinks(updatedLinks);
       setFreshLink({
         id: link.id,
@@ -221,12 +278,14 @@ export function CloudPanel({ project, onMessage }: Props) {
     }
     report(
       "Probenstand veröffentlicht. Der Link zeigt diesen festen Stand, ohne private Notizen und ohne Musik.",
+      scope,
     );
   }
 
-  async function revoke(link: SavedLink) {
+  async function revoke(link: SavedLink, scope: ActionScope) {
     if (!service || !account) return;
-    await service.revokeShareLink(link.id);
+    requireCurrent(scope);
+    await service.revokeShareLink(link.id, account.id);
     const repository = await getRepository({
       identity: { kind: "cloud", userId: account.id },
     });
@@ -236,11 +295,14 @@ export function CloudPanel({ project, onMessage }: Props) {
       item.id === link.id ? { ...item, revoked: true } : item,
     );
     await repository.setSetting(`links:${project.id}`, updated);
-    if (mounted.current) {
+    if (isCurrent(scope)) {
       setLinks(updated);
       if (freshLink?.id === link.id) setFreshLink(null);
     }
-    report("Freigabelink widerrufen. Neue Abrufe dieses Links sind gesperrt.");
+    report(
+      "Freigabelink widerrufen. Neue Abrufe dieses Links sind gesperrt.",
+      scope,
+    );
   }
 
   if (!service)
@@ -285,18 +347,21 @@ export function CloudPanel({ project, onMessage }: Props) {
             primary
             disabled={busy || !email.trim() || !password}
             onPress={() =>
-              void run(async () => {
+              void run(async (scope) => {
                 if (signup) {
                   const result = await service.signUp(email, password);
                   report(
                     result.session
                       ? "Testkonto angemeldet."
                       : "Bitte die Bestätigungs-E-Mail öffnen und dich danach anmelden. Falls keine E-Mail ankommt, muss der Testversand eingerichtet werden.",
+                    scope,
                   );
+                  if (mounted.current) setSignup(false);
                 } else {
                   await service.signIn(email, password);
                   report(
                     "Angemeldet. Die lokale Projektliste bleibt unverändert.",
+                    scope,
                   );
                 }
                 if (mounted.current) setPassword("");
@@ -321,9 +386,12 @@ export function CloudPanel({ project, onMessage }: Props) {
           <Button
             disabled={busy}
             onPress={() =>
-              void run(async () => {
+              void run(async (scope) => {
                 await service.signOut();
-                report("Abgemeldet. Deine lokalen Daten bleiben erhalten.");
+                report(
+                  "Abgemeldet. Deine lokalen Daten bleiben erhalten.",
+                  scope,
+                );
               })
             }
           >
@@ -366,7 +434,7 @@ export function CloudPanel({ project, onMessage }: Props) {
               <Button
                 disabled={busy}
                 onPress={() =>
-                  void run(async () => {
+                  void run(async (scope) => {
                     if (
                       Platform.OS !== "web" ||
                       typeof navigator === "undefined" ||
@@ -376,7 +444,7 @@ export function CloudPanel({ project, onMessage }: Props) {
                         "Bitte den Link im Textfeld markieren und kopieren.",
                       );
                     await navigator.clipboard.writeText(freshLink.url);
-                    report("Freigabelink kopiert.");
+                    report("Freigabelink kopiert.", scope);
                   })
                 }
               >
@@ -403,7 +471,7 @@ export function CloudPanel({ project, onMessage }: Props) {
               </Label>
               <Button
                 disabled={busy || link.revoked}
-                onPress={() => void run(() => revoke(link))}
+                onPress={() => void run((scope) => revoke(link, scope))}
               >
                 Link widerrufen
               </Button>

@@ -7,10 +7,10 @@ Dieses Protokoll trennt implementierte Funktionen, tatsächlich ausgeführte Pr�
 | Prüfung | Tatsächlicher Nachweis |
 | --- | --- |
 | Frische Installation | `npm ci` erfolgreich, 751 Pakete aus dem Lockfile; `expo install --check`: Dependencies are up to date |
-| `npm run check` | TypeScript ohne Fehler, ESLint ohne Warnungen, 50/50 Tests bestanden: 22 Kern, 21 Datenadapter, 4 PDF, 3 Audio |
+| `npm run check` | TypeScript ohne Fehler, ESLint ohne Warnungen, 86/86 Tests bestanden: 46 Kern, 33 Datenadapter, 4 PDF, 3 Audio |
 | `npm run build:web` | Expo-58-SPA erfolgreich exportiert; echte JS-/Asset-Dateien unter `apps/app/dist` |
 | iOS-JavaScript-Export | `expo export --platform ios --output-dir ../../.local/ios-bundle` erfolgreich: 3.914 Module, ein Hermes-Bundle (11 MB), 23 Assets. Ausschließlich JS-/Asset-Export, kein signierter Native-Build und kein Gerätetest |
-| `npm run test:e2e` | Abschließend 11/11 Chromium-Tests gegen den frisch erzeugten statischen Build bestanden (56,8 s); keine Testwiederholungen zur Kaschierung von Fehlern |
+| `npm run test:e2e` | Abschließend 14/14 Chromium-Tests gegen den frisch erzeugten statischen Build bestanden (1,1 min); keine Testwiederholungen zur Kaschierung von Fehlern |
 | Editor | Neues Projekt, Position bearbeiten, Undo/Redo, Formation anlegen, Muster anwenden, Reload mit erhaltener Historie und Playback |
 | 3D | Echtes Chromium-WebGL-Canvas, Kamerwechsel ohne Seitenfehler; Screenshot `test-results/editor-3d.png` |
 | Kleine Ansicht | 390×844, dunkles Theme, bedienbarer Editor ohne horizontalen Überlauf |
@@ -26,7 +26,7 @@ Gefundene Fehler wurden vor dem erfolgreichen Lauf korrigiert: React-Native-Text
 
 Zusätzlicher Datenverlustfehler korrigiert: unabhängige Besetzungs-/Einstellungslesungen dürfen nach einem Mehrtab-Konflikt die Editorrevision nicht auf den fremden Stand setzen. Der erste abgelehnte Entwurf bleibt sichtbar/exportierbar; nach einem Speicherfehler verhindert eine Sperre weitere Schreibversuche bis zum bewussten Reload. Neue Memory-/IndexedDB- und Browserregressionen sichern diesen Fall ab.
 
-Die Browserprüfung ist mit Chromium und Software-WebGL ausgeführt. Das ist kein Safari-, VoiceOver-, Hardware-Leistungs- oder iPhone-Nachweis. Die Cloud-UI-Tests sind kein Nachweis echter Mailzustellung oder vollständiger Anmeldung.
+Die Browserprüfung ist mit Chromium und Software-WebGL ausgeführt. Das ist kein Safari-, VoiceOver-, Hardware-Leistungs- oder iPhone-Nachweis. Automatisierte Cloud-UI-Tests mit simulierten Antworten sind kein eigener Nachweis echter Mailzustellung oder Anmeldung; der getrennte reale Ablauf ist unten dokumentiert.
 
 ## Entfernte CI und manuelle Preview
 
@@ -40,7 +40,7 @@ Supabase Auth Site URL wurde auf den Branch-Alias gesetzt. Die Redirect-Allowlis
 
 Der Eigentümer hat Brevo-SMTP gespeichert. Im neu geladenen Supabase-Dashboard war der SMTP-Schalter aktiv (`aria-checked=true`) und „Save changes“ deaktiviert. Ein frischer Brevo-Tab zeigte den eigenen Key **„ChoreoFlow Test“** als aktiv; der andere vorhandene Key blieb unverändert. Die deutsche Registrierungsbestätigung mit Betreff **„ChoreoFlow: E-Mail-Adresse bestätigen“** ist gespeichert, die Linkvariable `ConfirmationURL` bleibt unverändert.
 
-**Echte Registrierung und E-Mail-Bestätigung erfolgreich:** Der Eigentümer bestätigte die Mail. Am 16. Oktober 2026 zeigte `auth.users` genau ein Konto, mit `confirmation_sent_at=07:56:25 UTC` und `email_confirmed_at=07:56:40 UTC`. Die persönliche Adresse wird nicht dokumentiert. `last_sign_in_at` war noch nicht gesetzt; eine erfolgreiche App-Anmeldung ist damit noch nicht nachgewiesen.
+**Echte Registrierung und E-Mail-Bestätigung erfolgreich:** Der Eigentümer bestätigte die Mail. Am 16. Oktober 2026 zeigte `auth.users` genau ein Konto, mit `confirmation_sent_at=07:56:25 UTC` und `email_confirmed_at=07:56:40 UTC`. Die persönliche Adresse wird nicht dokumentiert. Beim späteren realen Cloudtest war `last_sign_in_at` gesetzt: ein Konto, eines bestätigt, eines angemeldet. Anmeldung und Sitzung nach Reload wurden zusätzlich in der App geprüft.
 
 **Brevo-Zustelllog nach ausdrücklicher Freigabe geprüft:** Für „ChoreoFlow: E-Mail-Adresse bestätigen“ sind am 16. Oktober 2026 um **09:56 Uhr Europe/Berlin** sowohl „Versendet“ als auch „Zugestellt“ protokolliert. Die Ersatzabsenderdomain `brevosend.com` erscheint tatsächlich im Log. „Angeklickt“ um 09:56/09:57 Uhr und „Von Proxy geladen“ belegen weiterhin aktives Klick-/Öffnungstracking. Die Konfiguration ist daher nicht trackingfrei. Der Umgang mit Auth-Mail-Tracking bleibt vor Produktion zu klären; die von einem weiteren Projekt verwendeten Kontoeinstellungen wurden nicht verändert.
 
@@ -48,12 +48,30 @@ Der Eigentümer hat Brevo-SMTP gespeichert. Im neu geladenen Supabase-Dashboard 
 
 Zwei versionierte Migrationen wurden auf `zhuslvtfktpclopkoqtf` angewendet. Die SQL-Berechtigungsprüfung lief mit synthetischen A-/B-Benutzern in einer zurückgerollten Transaktion. Geprüft: Besitz-/Mitgliedsrechte, RLS und Storagezugriff, Free/Pro- und Ablaufregeln, serverseitige Grenzen, Revisionskonflikte und Idempotenz, unterbundene Rechteausweitung, unveränderliche Veröffentlichung, anonymer Link und Widerruf, Titelgrenzen. Danach blieben keine Testbenutzer/-projekte/-dateien zurück. Dieser Nachweis stammt aus der Zeit vor dem inzwischen begonnenen echten Testkonto-/Mailablauf und trifft keine Aussage über dessen aktuelle Nutzerzahlen.
 
-Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern geprüft: Linien-/Volldrehungsprojekt und Show-/Liftprojekt, Weltwerte in 0,25-s-Schritten gleich. Notizen und lokale Medienpfade werden aus dem freigegebenen Snapshot entfernt. Supabase-Sicherheitsberater nach Härtung: keine Befunde; Performancehinweise nur noch ungenutzte Indizes in der leeren Datenbank. Dies ersetzt keinen umfassenden Penetrationstest.
+Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern geprüft: Linien-/Volldrehungsprojekt und Show-/Liftprojekt, Weltwerte in 0,25-s-Schritten gleich. Notizen und lokale Medienpfade werden aus dem freigegebenen Snapshot entfernt. Die frühere Prüfung nach der Schemahärtung hatte keine Security-Befunde. Die erneute Prüfung beim Cloudtest meldet eine WARN: deaktivierter Schutz gegen kompromittierte Passwörter (Supabase Pro oder höher erforderlich). Alle sieben öffentlichen Tabellen haben RLS; keine direkten Projektschreibrechte für anon/authenticated. Kein Tarifupgrade vorgenommen. Dies ersetzt keinen umfassenden Penetrationstest.
+
+## Fortgesetzte Cloud- und Formationsprüfung
+
+Die echte Browserprobe nutzte ausschließlich das separate Projekt **„Cloud-Prüfung 16.10. · synthetisch“** mit acht künstlichen Personen. Vorhandene persönliche Entwürfe wurden nicht geändert. Ablauf: angemeldetes Testkonto → bewusste Sicherung (Serverrevision 1) → Veröffentlichung → Zuschauer auf getrenntem Browser-Origin ohne Supabase-Anmeldung → Entwurf um Formation ergänzt und erneut gesichert (Revision 2) → veröffentlichter Stand bleibt auf Revision 1 → Link widerrufen → erneuter Linkabruf zeigt „ungültig, abgelaufen oder wurde widerrufen“. Die Datenbank bestätigte zwei Formationen im Entwurf und eine in der unveränderten Publikation. Nach App-Reload blieben Konto, Serverstand und Widerrufmetadaten verfügbar.
+
+Diese Probe lief mit lokalem Web-Build gegen das echte Supabase-Testprojekt. Sie belegt keine frei erreichbare Vercel-Freigabe, zwei gleichzeitig arbeitende echte Konten, Medienübertragung oder geräteübergreifende Wiederherstellung. Bereits geladene Zuschauerstände werden durch Widerruf nicht rückwirkend aus dem Browser gelöscht; neue Abrufe sind gesperrt.
+
+Mit dem korrigierten Build wurde die neue Formationskopie zusätzlich als Serverstand 3 gesichert, veröffentlicht und im getrennten Zuschauer-Origin geprüft (20 Sekunden, acht Personen). Wechsel zwischen diesem gültigen und dem alten widerrufenen Fragment funktioniert ohne Seitenreload; auch der zweite Testlink wurde anschließend erfolgreich widerrufen. Die synthetischen Teststände bleiben nachvollziehbar gespeichert.
+
+Zusätzlich gefundene und korrigierte Fehler:
+
+- Kontowechsel während eines laufenden Uploads/Downloads: jede Anfrage trägt den exakt geprüften Start-Token; spätere Schritte prüfen weiter die Kontozuordnung. Veröffentlichungsaktionen erwarten die erfasste Nutzer-ID. Verspätete Antworten dürfen keine fremden Cloudmetadaten in der Oberfläche setzen.
+- Ein Hintergrunddownload darf die Konfliktbasis eines bereits geöffneten alten Entwurfs nicht fortschreiben. Vier Regressionen reproduzierten vorher mögliche Überschreibungen und bestehen nach dem Fix; bewusster Reload schaltet Bearbeitung wieder frei.
+- Verspäteter Remote-Download: eine ältere Serverrevision überschreibt keinen neueren bestätigten Stand; derselbe Stand erhält Undo und lokale Medienreferenzen.
+- Wechsel des Freigabe-Fragments im selben Browser-Tab: der Viewer verwirft alten Stand und Wiedergabe vor dem neuen Abruf. Die Regression scheiterte vor der Korrektur.
+- Formationsauswahl und Endzeit: Auswahl erfolgt über stabile IDs; neue Endformationen werden erst gegen die neue Projektdauer angesprungen. Duplizieren erhält bestehende volle Drehungen; Umordnen/Löschen zeigen verlorene Bewegungen vor Bestätigung. Zeitereignisse werden nicht still gekürzt.
+
+Die 86 Fach-/Daten-/Export-/Audiotests umfassen 24 neue Formationstests und zwölf neue Datenadaptertests. Alle 14 Browserabläufe bestanden nach Korrektur der zuvor fehlenden Web-Auswahlkennzeichnung (`aria-pressed`). Drei neue Abläufe prüfen Formationskopie, Reihenfolge, Löschung, vollständige Drehungen, JSON-Roundtrip, Reload/Undo/Redo sowie das 390-px-Layout. Token-Pinning wird auch mit dem echten Supabase-JS-Requestpfad und simuliertem HTTP geprüft; das ist kein weiterer echter Zwei-Konto-Cloudtest.
 
 ## Noch fehlende Abnahmen
 
 - Physisches iPhone: native SQLite/SecureStore/Dateien, 3D, Gesten, Audio-Unterbrechung, PDF-Teilen und Hintergrundverhalten.
-- App-Anmeldung, Sessionwiederherstellung, Passwortwiederherstellung, Kontolöschung und Datenexport; Umgang mit dem nachgewiesenen Auth-Link-/Öffnungstracking vor Produktion. Registrierung, protokollierte Zustellung und Mailbestätigung des einen echten Testkontos sind bereits nachgewiesen.
+- Passwortwiederherstellung, Kontolöschung und vollständiger Konto-Datenexport; Umgang mit dem nachgewiesenen Auth-Link-/Öffnungstracking vor Produktion. Registrierung, protokollierte Zustellung, Mailbestätigung, App-Anmeldung und Sitzung nach Reload des einen echten Testkontos sind bereits nachgewiesen.
 - Teamverwaltung, Ordnerrechte, gleichzeitige Bearbeitung über mehrere Geräte, Medien-Sync und Konfliktauflösung.
 - Native PNG, portables Medienpaket, Videoexport, StoreKit-Kauf/Restore/Entitlement-Verifizierung.
 - Performance bei 100 Personen/200 Formationen auf Zielgeräten; systematische Barrierefreiheit und Safari.

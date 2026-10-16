@@ -130,16 +130,21 @@ export class LocalProjectRepository implements ProjectRepository {
   }
   async acceptRemote(project: Project, cloudRevision: number, cloudProjectId?: string): Promise<void> {
     assertValidProject(project); safeKey(project.id);
+    if (!Number.isSafeInteger(cloudRevision) || cloudRevision < 1) throw new Error('Ungültige Cloud-Revision.');
+    // Downloads persist data without returning an editor history. Advancing the
+    // observed baseline here would let a still-stale editor overwrite that data.
     await this.transaction(state => {
       if (state.outbox.some(entry => entry.projectId === project.id)) throw new LocalConflictError();
       if (cloudProjectId && state.cloudProjectIds[project.id] && state.cloudProjectIds[project.id] !== cloudProjectId) throw new Error('Zwei Cloud-Projekte verwenden dieselbe interne Projektkennung. Kein lokaler Stand wurde ersetzt.');
-      if (state.cloudRevisions[project.id] === cloudRevision && same(state.histories[project.id]?.present, project)) return null;
+      // A download may finish after a newer upload/download was acknowledged.
+      // Never roll it back, or erase undo/media metadata for the same revision.
+      if ((state.cloudRevisions[project.id] ?? 0) > cloudRevision) throw new LocalConflictError();
+      if (state.cloudRevisions[project.id] === cloudRevision) return null;
       state.histories[project.id] = createHistory(project);
       state.projects = [...state.projects.filter(item => item.id !== project.id), clone(project)];
       state.cloudRevisions[project.id] = cloudRevision;
       if (cloudProjectId) state.cloudProjectIds[project.id] = cloudProjectId;
       return null;
     });
-    this.observedRevisions.set(project.id, project.revision);
   }
 }
