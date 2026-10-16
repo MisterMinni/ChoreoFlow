@@ -32,20 +32,28 @@ Die Browserprüfung ist mit Chromium und Software-WebGL ausgeführt. Das ist kei
 
 Quellcommit `669e38fb9cea36ab55ed2fb63abed5962a3b8467` ist gepusht und über [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1) reviewbar. [GitHub-Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082) ist erfolgreich: **50 Tests bestanden, 0 fehlgeschlagen, 0 übersprungen**; Browser: **10 bestanden (24,2 s), 1 übersprungen**. Der übersprungene Test ist die simulierte Cloud-Viewer-Antwort, weil CI keine Cloudkonfiguration erhält. Der lokale Lauf mit Testprojekt-Konfiguration bestand weiterhin alle 11 Browsertests (56,8 s).
 
+Der anschließende reine Dokumentationscommit `cd5a094` ist gepusht; dessen [CI 38869322092](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38869322092) ist ebenfalls erfolgreich. Die Quell-Preview bleibt auf `669e38f`; aus dem Dokumentationscommit wurde keine neue App-Bereitstellung abgeleitet.
+
 Vercel-Deployment `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu` wurde manuell für exakt diesen Commit erstellt und erreichte **READY** nach 49 Sekunden Buildzeit. [Deployment-URL](https://choreoflow-75cbckwvz-bastian-minnichs-projects.vercel.app) und [Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app) sind eingerichtet. Authentifizierte Abrufe von `/` und `/share` lieferten HTTP 200, echte Expo-HTML und Assets. Im normalen Browser greift Vercel-SSO; das gilt auch für den auf App-Ebene anonymen Viewer. Diese Abrufe sind kein zusätzlicher vollständiger Browser-E2E-Lauf auf Vercel. Die Produktionsdomain wurde nicht aktualisiert.
 
-Supabase Auth Site URL wurde auf den Branch-Alias gesetzt. Die Redirect-Allowlist enthält ausschließlich `http://localhost:8081`, `http://127.0.0.1:8082` und den exakten Branch-Alias, ohne Wildcards. Das Speichern wurde durch erneutes Öffnen in einem neuen Dashboard-Tab bestätigt. Brevo-Login ist erfolgt und der benannte Absender verifiziert. SMTP-Formular vorbereitet; Schlüssel, Speichern und Zustellprüfung noch offen.
+Supabase Auth Site URL wurde auf den Branch-Alias gesetzt. Die Redirect-Allowlist enthält ausschließlich `http://localhost:8081`, `http://127.0.0.1:8082` und den exakten Branch-Alias, ohne Wildcards. Das Speichern wurde durch erneutes Öffnen in einem neuen Dashboard-Tab bestätigt.
+
+Der Eigentümer hat Brevo-SMTP gespeichert. Im neu geladenen Supabase-Dashboard war der SMTP-Schalter aktiv (`aria-checked=true`) und „Save changes“ deaktiviert. Ein frischer Brevo-Tab zeigte den eigenen Key **„ChoreoFlow Test“** als aktiv; der andere vorhandene Key blieb unverändert. Die deutsche Registrierungsbestätigung mit Betreff **„ChoreoFlow: E-Mail-Adresse bestätigen“** ist gespeichert, die Linkvariable `ConfirmationURL` bleibt unverändert.
+
+**Echte Registrierung und E-Mail-Bestätigung erfolgreich:** Der Eigentümer bestätigte die Mail. Am 16. Oktober 2026 zeigte `auth.users` genau ein Konto, mit `confirmation_sent_at=07:56:25 UTC` und `email_confirmed_at=07:56:40 UTC`. Die persönliche Adresse wird nicht dokumentiert. `last_sign_in_at` war noch nicht gesetzt; eine erfolgreiche App-Anmeldung ist damit noch nicht nachgewiesen.
+
+**Brevo-Zustelllog nach ausdrücklicher Freigabe geprüft:** Für „ChoreoFlow: E-Mail-Adresse bestätigen“ sind am 16. Oktober 2026 um **09:56 Uhr Europe/Berlin** sowohl „Versendet“ als auch „Zugestellt“ protokolliert. Die Ersatzabsenderdomain `brevosend.com` erscheint tatsächlich im Log. „Angeklickt“ um 09:56/09:57 Uhr und „Von Proxy geladen“ belegen weiterhin aktives Klick-/Öffnungstracking. Die Konfiguration ist daher nicht trackingfrei. Der Umgang mit Auth-Mail-Tracking bleibt vor Produktion zu klären; die von einem weiteren Projekt verwendeten Kontoeinstellungen wurden nicht verändert.
 
 ## Tatsächlich am Supabase-Testprojekt geprüft
 
-Zwei versionierte Migrationen wurden auf `zhuslvtfktpclopkoqtf` angewendet. Die SQL-Berechtigungsprüfung lief mit synthetischen A-/B-Benutzern in einer zurückgerollten Transaktion. Geprüft: Besitz-/Mitgliedsrechte, RLS und Storagezugriff, Free/Pro- und Ablaufregeln, serverseitige Grenzen, Revisionskonflikte und Idempotenz, unterbundene Rechteausweitung, unveränderliche Veröffentlichung, anonymer Link und Widerruf, Titelgrenzen. Danach blieben keine Testbenutzer/-projekte/-dateien zurück.
+Zwei versionierte Migrationen wurden auf `zhuslvtfktpclopkoqtf` angewendet. Die SQL-Berechtigungsprüfung lief mit synthetischen A-/B-Benutzern in einer zurückgerollten Transaktion. Geprüft: Besitz-/Mitgliedsrechte, RLS und Storagezugriff, Free/Pro- und Ablaufregeln, serverseitige Grenzen, Revisionskonflikte und Idempotenz, unterbundene Rechteausweitung, unveränderliche Veröffentlichung, anonymer Link und Widerruf, Titelgrenzen. Danach blieben keine Testbenutzer/-projekte/-dateien zurück. Dieser Nachweis stammt aus der Zeit vor dem inzwischen begonnenen echten Testkonto-/Mailablauf und trifft keine Aussage über dessen aktuelle Nutzerzahlen.
 
 Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern geprüft: Linien-/Volldrehungsprojekt und Show-/Liftprojekt, Weltwerte in 0,25-s-Schritten gleich. Notizen und lokale Medienpfade werden aus dem freigegebenen Snapshot entfernt. Supabase-Sicherheitsberater nach Härtung: keine Befunde; Performancehinweise nur noch ungenutzte Indizes in der leeren Datenbank. Dies ersetzt keinen umfassenden Penetrationstest.
 
 ## Noch fehlende Abnahmen
 
 - Physisches iPhone: native SQLite/SecureStore/Dateien, 3D, Gesten, Audio-Unterbrechung, PDF-Teilen und Hintergrundverhalten.
-- Echte Kontoerstellung, Mailbestätigung, Sessionwiederherstellung, Passwortwiederherstellung, Kontolöschung und Datenexport mit konfiguriertem SMTP.
+- App-Anmeldung, Sessionwiederherstellung, Passwortwiederherstellung, Kontolöschung und Datenexport; Umgang mit dem nachgewiesenen Auth-Link-/Öffnungstracking vor Produktion. Registrierung, protokollierte Zustellung und Mailbestätigung des einen echten Testkontos sind bereits nachgewiesen.
 - Teamverwaltung, Ordnerrechte, gleichzeitige Bearbeitung über mehrere Geräte, Medien-Sync und Konfliktauflösung.
 - Native PNG, portables Medienpaket, Videoexport, StoreKit-Kauf/Restore/Entitlement-Verifizierung.
 - Performance bei 100 Personen/200 Formationen auf Zielgeräten; systematische Barrierefreiheit und Safari.

@@ -10,6 +10,8 @@ Der Eigentümer hat unter Expo-Nutzer `BastianExpo` das Projekt [choreoflow/bast
 
 Commit `669e38fb9cea36ab55ed2fb63abed5962a3b8467` ist gepusht und in [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1). [Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082) ist erfolgreich. Die manuelle [Preview am stabilen Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app) läuft als Deployment `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu` mit Status READY; `choreoflow.vercel.app` wurde nicht aktualisiert. Vercel-SSO schützt die gesamte Preview einschließlich `/share`; ein anonymer Supabase-Viewerlink allein überwindet diese vorgeschaltete Zugangsschranke nicht.
 
+Der spätere Dokumentationscommit `cd5a094` ist gepusht und [CI 38869322092](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38869322092) erfolgreich. Die App-Preview verwendet weiterhin den geprüften Quellcommit `669e38f`.
+
 Supabase Auth Site URL entspricht exakt dem Branch-Alias. Erlaubte Redirects: `http://localhost:8081`, `http://127.0.0.1:8082` und `https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app`. Keine Wildcards. Die gespeicherten Werte wurden in einem neuen Dashboard-Tab erneut geprüft.
 
 ## Lokal
@@ -20,7 +22,7 @@ Browserprojekte und Musik leben in IndexedDB auf genau dem verwendeten Origin. `
 
 ## Noch erforderliche externe Einrichtung
 
-- **Brevo wurde als SMTP-Anbieter gewählt; der Eigentümer ist eingeloggt.** Die vorläufig benannte Gmail-Adresse ist als Absender verifiziert; sie wird nicht im Repository gespeichert. Brevo ersetzt dabei die nicht authentifizierbare Gmail-Absenderdomain durch `brevosend.com`. Eigene Domain später; kein Domainkauf für den aktuellen Test nötig. SMTP-Formular vorbereitet; Schlüssel, Speichern und Zustellprüfung noch offen. Die Abschaltung des Auth-Linktrackings bleibt zu prüfen. [MAIL_SETUP.md](./MAIL_SETUP.md)
+- **Brevo-SMTP arbeitet im Supabase-Testprojekt.** Der eigene Key „ChoreoFlow Test“ ist aktiv; ein weiterer vorhandener Key blieb unverändert. Die deutsche Bestätigungsvorlage verwendet weiterhin `ConfirmationURL`. Registrierung und Mailbestätigung eines echten Testkontos sind bestätigt; Brevo protokolliert Versand/Zustellung am 16. Oktober 2026 um 09:56 Uhr Europe/Berlin mit der Ersatzabsenderdomain `brevosend.com`. Persönliche Adresse und Zugangsdaten bleiben außerhalb des Repositorys. Klick-/Öffnungstracking ist laut Log weiterhin aktiv und vor Produktion zu klären. Wegen der Nutzung durch ein weiteres Projekt wurden die Kontoeinstellungen nicht verändert. App-Anmeldung steht noch aus. Eigene Domain später; kein Domainkauf für den aktuellen Test nötig. [MAIL_SETUP.md](./MAIL_SETUP.md)
 - Das Expo-Projekt ist verifiziert und lokal verknüpft; eine bestätigte **Bundle-ID fehlt weiterhin**. Apple-Zugang, native Apple-Anmeldung und StoreKit-Produktkennungen bleiben ebenfalls erforderlich. Native Builds und Signierung sind noch offen. [STORE_RELEASE.md](./STORE_RELEASE.md)
 - Separate Produktionsinstanz nach bewusster Entscheidung des Eigentümers. Keine automatische kostenpflichtige Supabase-Branch-Erzeugung.
 - Budgetalarme/Verbrauchsgrenzen in beiden Anbietern; vollständige Backup- und Restore-Übung für Datenbank **und** Medien.

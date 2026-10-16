@@ -61,6 +61,7 @@ Die lokale Vercel-CLI 41.6.2 konnte bei der Bestandspruefung keinen Benutzer lad
 - [Unveraenderliche Deployment-URL](https://choreoflow-75cbckwvz-bastian-minnichs-projects.vercel.app).
 - [Stabiler Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app), auch als Supabase Auth Site URL gesetzt. Fuer Browserdaten ist dieser gleichbleibende Origin gegenueber wechselnden Deployment-URLs vorzuziehen.
 - [GitHub-Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082): erfolgreich; 50/50 Tests sowie 10 bestandene Browserpruefungen und ein ausdruecklich uebersprungener Cloud-Viewer-Test ohne Cloudkonfiguration.
+- Der spaetere reine Dokumentationscommit `cd5a094` ist ebenfalls gepusht; [CI 38869322092](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38869322092) ist erfolgreich. Die bereitgestellte Quell-Preview bleibt unveraendert auf `669e38f`.
 
 Der normale Browserzugriff landet weiterhin bei Vercel Login. Authentifizierte Abrufe von `/` und `/share` lieferten jeweils HTTP 200 mit echter Expo-HTML und Assets. Das belegt die Bereitstellung, ersetzt aber keinen vollstaendigen Online-Auth- oder Zuschauertest. Auch der auf App-Ebene anonyme Viewer bleibt auf dieser Preview durch Vercel-SSO geschuetzt.
 
@@ -70,7 +71,7 @@ Ein vorheriger API-Versuch mit `target: "preview"` wurde mit HTTP 400 abgewiesen
 
 Das zuvor vorhandene Production-Deployment `dpl_2JMXpUyse8dV2Lhm7KP4roTAvHzD` stammt vom Initial Commit `35b42e3871c83e152a556e7c4f85aa3840d6a3b4`. Es meldet zwar READY, erzeugte laut Build-Log aber keine veroeffentlichbaren Dateien. Es ist kein Nachweis fuer eine funktionierende App.
 
-Die Produktionsdomain `choreoflow.vercel.app` wurde nicht aktualisiert und ist keine Vorschau dieses Entwicklungsstands. SMTP, native Apple-Anmeldung, EAS-Signierung, Store-Produkte und Produktions-Supabase gehoeren zu getrennten Freigabeschritten.
+Die Produktionsdomain `choreoflow.vercel.app` wurde nicht aktualisiert und ist keine Vorschau dieses Entwicklungsstands. Brevo-SMTP und die deutsche Registrierungsbestaetigungsvorlage sind im Supabase-Testprojekt gespeichert. Registrierung, protokollierte Mailzustellung und E-Mail-Bestaetigung eines echten Testkontos waren erfolgreich; die App-Anmeldung steht noch aus. Das Brevo-Log zeigt weiterhin aktives Klick-/Oeffnungstracking. Dessen Umgang ist vor Produktion zu klaeren; die auch von einem anderen Projekt verwendeten Kontoeinstellungen blieben unveraendert. Native Apple-Anmeldung, EAS-Signierung, Store-Produkte und Produktions-Supabase gehoeren zu getrennten Freigabeschritten.
 
 ## Primaerquellen
 

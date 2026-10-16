@@ -59,7 +59,7 @@ Geprüft: fremde Projekte/Besetzungen/Publikationen/Medien unsichtbar; direkte W
 
 Zusätzlich wurden die vollständigen Core-Testprojekte „Reihe“ und „Show“ durch die tatsächlich installierte SQL-Veröffentlichungsfunktion geschickt. Beide Medienmodi bestanden anschließend `assertValidProject`; die Szenen bei jedem 0,25-Sekunden-Schritt waren identisch zum Original, einschließlich voller Drehung und Hebefiguren. Private Notizen und lokale URIs waren entfernt. Reproduzierbarer Prüfhelfer: `supabase/tests/viewer-roundtrip.ts`.
 
-Anschließend erneut bestätigt: **0 Auth-Nutzer, 0 Projekte, 0 Publikationen, 0 Medienobjekte**. Security-Advisors: **keine Befunde**. Performance-Advisors: zwei reine INFO-Hinweise auf im neuen leeren Schema bisher ungenutzte Fremdschlüsselindizes; diese bleiben für referenzielle Operationen erhalten.
+Unmittelbar nach den damaligen SQL-Tests erneut bestätigt: **0 Auth-Nutzer, 0 Projekte, 0 Publikationen, 0 Medienobjekte**. Dieser historische Stand liegt vor der inzwischen erfolgreichen echten Testkonto-Registrierung und E-Mail-Bestätigung; den aktuellen Kontonachweis beschreibt der Auth-Abschnitt unten. Security-Advisors nach den SQL-Tests: **keine Befunde**. Performance-Advisors: zwei reine INFO-Hinweise auf im damals leeren Schema bisher ungenutzte Fremdschlüsselindizes; diese bleiben für referenzielle Operationen erhalten.
 
 Wiederholung: Inhalt der Testdatei im SQL-Editor des ausdrücklich benannten Testprojekts ausführen oder über den Supabase-Connector `execute_sql` ausführen. Die Datei enthält `BEGIN` und `ROLLBACK`. Nicht gegen Produktion ausführen. Migrationen erfolgen manuell und nur nach Review; es gibt keine automatischen Produktionsmigrationen.
 
@@ -71,14 +71,18 @@ Im angemeldeten Supabase-Dashboard gespeichert und in einem neuen Tab erneut ver
 - Redirect-Allowlist ausschließlich: `http://localhost:8081`, `http://127.0.0.1:8082` und `https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app`.
 - Keine Wildcards. Die Vercel-Preview ist unter diesem Branch-Alias bereitgestellt und vollständig durch Vercel-SSO geschützt.
 
-Die URL-Konfiguration ist kein Nachweis eines erfolgreichen Auth-Mail-Roundtrips. Der Eigentümer ist bei Brevo eingeloggt und der benannte Absender verifiziert. SMTP-Formular vorbereitet; Schlüssel, Speichern und Zustellprüfung noch offen.
+Die URL-Konfiguration ist kein Nachweis eines erfolgreichen Auth-Mail-Roundtrips. Der Eigentümer hat Brevo-SMTP inzwischen gespeichert. Nach erneutem Laden zeigte Supabase den SMTP-Schalter aktiv (`aria-checked=true`) und „Save changes“ deaktiviert. Ein frischer Brevo-Tab bestätigte den aktiven eigenen Key „ChoreoFlow Test“; der andere vorhandene Key blieb unverändert. Persönliche Adresse, SMTP-Login und Schlüsselwerte werden nicht im Repository dokumentiert.
+
+Die deutsche Registrierungsbestätigung ist gespeichert: Betreff „ChoreoFlow: E-Mail-Adresse bestätigen“, Linkvariable `ConfirmationURL` unverändert. **Registrierung und E-Mail-Bestätigung des echten Testkontos sind erfolgreich.** Der Eigentümer bestätigte die Mail; `auth.users` zeigte am 16. Oktober 2026 genau ein Konto mit `confirmation_sent_at=07:56:25 UTC` und `email_confirmed_at=07:56:40 UTC`. `last_sign_in_at` war noch nicht gesetzt; die App-Anmeldung steht noch aus. Die persönliche Konto-/Mailadresse wird nicht im Repository gespeichert.
+
+Nach ausdrücklicher Freigabe geprüftes Brevo-Log: „ChoreoFlow: E-Mail-Adresse bestätigen“ wurde am 16. Oktober 2026 um 09:56 Uhr Europe/Berlin als „Versendet“ und „Zugestellt“ erfasst. Die Ersatzabsenderdomain `brevosend.com` ist im Log bestätigt. „Angeklickt“ um 09:56/09:57 Uhr und „Von Proxy geladen“ zeigen aktives Klick-/Öffnungstracking. Es besteht keine Trackingfreiheit; der Umgang damit ist vor Produktion zu klären. Die Kontoeinstellungen blieben wegen eines weiteren Projekts unverändert.
 
 ## Noch benötigte externe Einrichtung
 
-- Brevo-SMTP mit dem bereits verifizierten vorläufigen Absender fertigstellen; Schlüssel und Speichern sind noch offen. Linktracking und tatsächliche Zustellung prüfen; eigene Domain folgt später. Die persönliche Adresse bleibt außerhalb des Repositorys. Den Supabase-Standardversand nicht als Produktionsversand behandeln. Siehe `MAIL_SETUP.md`.
+- Nach erfolgreicher Mailbestätigung die App-Anmeldung prüfen; Umgang mit dem protokollierten Klick-/Öffnungstracking vor Produktion klären. Eigene Domain folgt später. Die persönliche Adresse bleibt außerhalb des Repositorys. Siehe `MAIL_SETUP.md`.
 - Native Apple-Anmeldung, Bundle-/Team-IDs und Apple-Kaufverifikation.
 - Getrenntes, bewusst freigegebenes Produktionsprojekt und passende Umgebungsvariablen; keine Testdaten oder `test_fixture`-Berechtigungen übertragen.
-- Auth-Bestätigungs-, Passwortreset-, Accountlöschungs- und echter Zwei-Konto-Webtest; keine Mail an reale Nutzer wurde zur Prüfung versendet.
+- App-Anmeldungs-, Passwortreset-, Accountlöschungs- und echter Zwei-Konto-Webtest. Ein echtes Testkonto ist registriert und per Mail bestätigt; weitere Konten oder erfolgreiche App-Sitzungen sind dadurch nicht belegt.
 - Kostenwarnungen, tatsächliche Verbrauchsmessung, Datenbank- und separate Medienbackups mit Wiederherstellungstest.
 
 Nur Publishable-Key und Projekt-URL gehören in `EXPO_PUBLIC_*`. Service-/Secret-Schlüssel dürfen niemals im Client oder Repository stehen.
@@ -91,4 +95,4 @@ Im Editor unter **Freigaben** kann ein Testkonto per E-Mail/Passwort angelegt od
 
 **Probenstand veröffentlichen** ist erst für den bestätigten aktuellen Cloudstand möglich. Der dabei angelegte Link wird einmalig angezeigt und kann kopiert werden. Seine nicht geheime Verwaltungs-ID bleibt im lokalen Kontospeicher, damit er auf diesem Gerät widerrufen werden kann. Eine geräteübergreifende Linkverwaltung fehlt noch. Unter `localhost` erstellte Links funktionieren nur auf dem eigenen Computer. Die manuell bereitgestellte Test-URL ist erreichbar, verlangt aber weiterhin Vercel-SSO-Zugang.
 
-`/share#token=…` zeigt den unveränderlichen Stand ohne Supabase-Konto: 2D, Wiedergabe, Positionsregler, Geschwindigkeit, Wiederholung und persönliche Hervorhebung. **Auf der aktuellen Preview bleibt vorher Vercel-SSO erforderlich.** Der Viewer ist dort daher noch kein frei öffentlich erreichbarer Freigabelink. Es gibt keine Bearbeitungsaktionen. Musik, 3D im Viewer und native Deep Links sind noch offen. Es wurden keine realen Auth-Konten oder E-Mailversandvorgänge für UI-Tests ausgelöst.
+`/share#token=…` zeigt den unveränderlichen Stand ohne Supabase-Konto: 2D, Wiedergabe, Positionsregler, Geschwindigkeit, Wiederholung und persönliche Hervorhebung. **Auf der aktuellen Preview bleibt vorher Vercel-SSO erforderlich.** Der Viewer ist dort daher noch kein frei öffentlich erreichbarer Freigabelink. Es gibt keine Bearbeitungsaktionen. Musik, 3D im Viewer und native Deep Links sind noch offen. Die zuvor ausgeführten automatisierten UI-Tests verwendeten keine realen Auth-Konten oder E-Mailversandvorgänge. Die spätere echte Registrierung und Mailbestätigung sind separat nachgewiesen; eine echte App-Anmeldung oder Freigabe-Sitzung steht noch aus.
