@@ -30,7 +30,7 @@ Die Browserprüfung verwendet den zuvor erzeugten Build auf Port 8082. Für eine
 
 `npm run dev:iphone` startet Metro für einen eigenen Development Build. EAS-Projekt, Bundle-ID und Signierung müssen mit den tatsächlichen Apple-/Expo-Konten verbunden werden. Das ist noch kein installierbarer iPhone-Build. Siehe [STORE_RELEASE](docs/STORE_RELEASE.md).
 
-Cloud ist optional. `apps/app/.env.example` beschreibt die öffentlichen Konfigurationswerte; lokale Werte kommen in die ignorierte `apps/app/.env.local`. Niemals Secret-/Service-Role-Schlüssel im Client verwenden. Das vorhandene Supabase-Projekt dient ausdrücklich als **Testumgebung**. Datenbankmigrationen, RLS, Rechte- und Quotenprüfungen sind eingerichtet; SMTP und vollständige Anmeldung mit echten Testkonten sind noch offen. Siehe [CLOUD](docs/CLOUD.md) und [OPERATIONS](docs/OPERATIONS.md).
+Cloud ist optional. `apps/app/.env.example` beschreibt die öffentlichen Konfigurationswerte; lokale Werte kommen in die ignorierte `apps/app/.env.local`. Niemals Secret-/Service-Role-Schlüssel im Client verwenden. Das vorhandene Supabase-Projekt dient ausdrücklich als **Testumgebung**. Datenbankmigrationen, RLS, Rechte- und Quotenprüfungen sowie Brevo-SMTP sind eingerichtet. Echte Registrierung, Mailzustellung und E-Mail-Bestätigung wurden geprüft; die anschließende App-Anmeldung und weitere Auth-Flows stehen noch aus. Brevo-Linktracking ist weiterhin aktiv und vor Produktion zu klären. Siehe [CLOUD](docs/CLOUD.md), [MAIL_SETUP](docs/MAIL_SETUP.md) und [OPERATIONS](docs/OPERATIONS.md).
 
 Vercel veröffentlicht ausschließlich bewusst gestartete Previews. Git-Autodeploy ist deaktiviert und Produktionsbuilds sind gesperrt. Siehe [VERCEL](docs/VERCEL.md).
 
