@@ -63,10 +63,19 @@ Anschließend erneut bestätigt: **0 Auth-Nutzer, 0 Projekte, 0 Publikationen, 0
 
 Wiederholung: Inhalt der Testdatei im SQL-Editor des ausdrücklich benannten Testprojekts ausführen oder über den Supabase-Connector `execute_sql` ausführen. Die Datei enthält `BEGIN` und `ROLLBACK`. Nicht gegen Produktion ausführen. Migrationen erfolgen manuell und nur nach Review; es gibt keine automatischen Produktionsmigrationen.
 
+## Gespeicherte Auth-URLs
+
+Im angemeldeten Supabase-Dashboard gespeichert und in einem neuen Tab erneut verifiziert:
+
+- Site URL: `https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app`.
+- Redirect-Allowlist ausschließlich: `http://localhost:8081`, `http://127.0.0.1:8082` und `https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app`.
+- Keine Wildcards. Die Vercel-Preview ist unter diesem Branch-Alias bereitgestellt und vollständig durch Vercel-SSO geschützt.
+
+Die URL-Konfiguration ist kein Nachweis eines erfolgreichen Auth-Mail-Roundtrips. Der Eigentümer ist bei Brevo eingeloggt und der benannte Absender verifiziert. SMTP-Formular vorbereitet; Schlüssel, Speichern und Zustellprüfung noch offen.
+
 ## Noch benötigte externe Einrichtung
 
-- Auth Site URL und erlaubte Redirects für die konkrete lokale/Preview-URL; der verfügbare Connector hat keine Auth-Konfigurationswerkzeuge.
-- Geeigneter eigener SMTP-Versand mit verifizierter Domain; den Supabase-Standardversand nicht als Produktionsversand behandeln.
+- Brevo-SMTP mit dem bereits verifizierten vorläufigen Absender fertigstellen; Schlüssel und Speichern sind noch offen. Linktracking und tatsächliche Zustellung prüfen; eigene Domain folgt später. Die persönliche Adresse bleibt außerhalb des Repositorys. Den Supabase-Standardversand nicht als Produktionsversand behandeln. Siehe `MAIL_SETUP.md`.
 - Native Apple-Anmeldung, Bundle-/Team-IDs und Apple-Kaufverifikation.
 - Getrenntes, bewusst freigegebenes Produktionsprojekt und passende Umgebungsvariablen; keine Testdaten oder `test_fixture`-Berechtigungen übertragen.
 - Auth-Bestätigungs-, Passwortreset-, Accountlöschungs- und echter Zwei-Konto-Webtest; keine Mail an reale Nutzer wurde zur Prüfung versendet.
@@ -80,6 +89,6 @@ Produktionsbuilds sind in `apps/app/app.config.ts` derzeit gesperrt. Separat gep
 
 Im Editor unter **Freigaben** kann ein Testkonto per E-Mail/Passwort angelegt oder angemeldet werden. Die Anmeldung wechselt die lokale Projektliste nicht. **Im Testkonto sichern** überträgt bewusst eine Projektkopie über einen getrennten, persistenten Kontospeicher und eine Outbox. Der Button kann nach Offlinearbeit wiederholt werden; Konflikte bleiben als solche sichtbar. Der Projektdatei-Export bleibt erreichbar.
 
-**Probenstand veröffentlichen** ist erst für den bestätigten aktuellen Cloudstand möglich. Der dabei angelegte Link wird einmalig angezeigt und kann kopiert werden. Seine nicht geheime Verwaltungs-ID bleibt im lokalen Kontospeicher, damit er auf diesem Gerät widerrufen werden kann. Eine geräteübergreifende Linkverwaltung fehlt noch. Unter `localhost` erstellte Links funktionieren nur auf dem eigenen Computer; eine erreichbare Test-URL benötigt eine bewusst freigegebene Bereitstellung.
+**Probenstand veröffentlichen** ist erst für den bestätigten aktuellen Cloudstand möglich. Der dabei angelegte Link wird einmalig angezeigt und kann kopiert werden. Seine nicht geheime Verwaltungs-ID bleibt im lokalen Kontospeicher, damit er auf diesem Gerät widerrufen werden kann. Eine geräteübergreifende Linkverwaltung fehlt noch. Unter `localhost` erstellte Links funktionieren nur auf dem eigenen Computer. Die manuell bereitgestellte Test-URL ist erreichbar, verlangt aber weiterhin Vercel-SSO-Zugang.
 
-`/share#token=…` zeigt den unveränderlichen Stand ohne Anmeldung: 2D, Wiedergabe, Positionsregler, Geschwindigkeit, Wiederholung und persönliche Hervorhebung. Es gibt keine Bearbeitungsaktionen. Musik, 3D im Viewer und native Deep Links sind noch offen. Es wurden keine realen Auth-Konten oder E-Mailversandvorgänge für UI-Tests ausgelöst.
+`/share#token=…` zeigt den unveränderlichen Stand ohne Supabase-Konto: 2D, Wiedergabe, Positionsregler, Geschwindigkeit, Wiederholung und persönliche Hervorhebung. **Auf der aktuellen Preview bleibt vorher Vercel-SSO erforderlich.** Der Viewer ist dort daher noch kein frei öffentlich erreichbarer Freigabelink. Es gibt keine Bearbeitungsaktionen. Musik, 3D im Viewer und native Deep Links sind noch offen. Es wurden keine realen Auth-Konten oder E-Mailversandvorgänge für UI-Tests ausgelöst.

@@ -28,11 +28,19 @@ Zusätzlicher Datenverlustfehler korrigiert: unabhängige Besetzungs-/Einstellun
 
 Die Browserprüfung ist mit Chromium und Software-WebGL ausgeführt. Das ist kein Safari-, VoiceOver-, Hardware-Leistungs- oder iPhone-Nachweis. Die Cloud-UI-Tests sind kein Nachweis echter Mailzustellung oder vollständiger Anmeldung.
 
+## Entfernte CI und manuelle Preview
+
+Quellcommit `669e38fb9cea36ab55ed2fb63abed5962a3b8467` ist gepusht und über [Draft-PR #1](https://github.com/MisterMinni/ChoreoFlow/pull/1) reviewbar. [GitHub-Linux-CI 38867122082](https://github.com/MisterMinni/ChoreoFlow/actions/runs/38867122082) ist erfolgreich: **50 Tests bestanden, 0 fehlgeschlagen, 0 übersprungen**; Browser: **10 bestanden (24,2 s), 1 übersprungen**. Der übersprungene Test ist die simulierte Cloud-Viewer-Antwort, weil CI keine Cloudkonfiguration erhält. Der lokale Lauf mit Testprojekt-Konfiguration bestand weiterhin alle 11 Browsertests (56,8 s).
+
+Vercel-Deployment `dpl_4p8z7E4cwNAcegbZrQWUsrgSwkwu` wurde manuell für exakt diesen Commit erstellt und erreichte **READY** nach 49 Sekunden Buildzeit. [Deployment-URL](https://choreoflow-75cbckwvz-bastian-minnichs-projects.vercel.app) und [Branch-Alias](https://choreoflow-git-codex-project-setup-bastian-minnichs-projects.vercel.app) sind eingerichtet. Authentifizierte Abrufe von `/` und `/share` lieferten HTTP 200, echte Expo-HTML und Assets. Im normalen Browser greift Vercel-SSO; das gilt auch für den auf App-Ebene anonymen Viewer. Diese Abrufe sind kein zusätzlicher vollständiger Browser-E2E-Lauf auf Vercel. Die Produktionsdomain wurde nicht aktualisiert.
+
+Supabase Auth Site URL wurde auf den Branch-Alias gesetzt. Die Redirect-Allowlist enthält ausschließlich `http://localhost:8081`, `http://127.0.0.1:8082` und den exakten Branch-Alias, ohne Wildcards. Das Speichern wurde durch erneutes Öffnen in einem neuen Dashboard-Tab bestätigt. Brevo-Login ist erfolgt und der benannte Absender verifiziert. SMTP-Formular vorbereitet; Schlüssel, Speichern und Zustellprüfung noch offen.
+
 ## Tatsächlich am Supabase-Testprojekt geprüft
 
 Zwei versionierte Migrationen wurden auf `zhuslvtfktpclopkoqtf` angewendet. Die SQL-Berechtigungsprüfung lief mit synthetischen A-/B-Benutzern in einer zurückgerollten Transaktion. Geprüft: Besitz-/Mitgliedsrechte, RLS und Storagezugriff, Free/Pro- und Ablaufregeln, serverseitige Grenzen, Revisionskonflikte und Idempotenz, unterbundene Rechteausweitung, unveränderliche Veröffentlichung, anonymer Link und Widerruf, Titelgrenzen. Danach blieben keine Testbenutzer/-projekte/-dateien zurück.
 
-Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern geprüft: Linien-/Volldrehungsprojekt und Show-/Liftprojekt, Weltwerte in 0,25-s-Schritten gleich. Notizen und lokale Medienpfade verlassen den freigegebenen Snapshot nicht. Supabase-Sicherheitsberater nach Härtung: keine Befunde; Performancehinweise nur noch ungenutzte Indizes in der leeren Datenbank. Dies ersetzt keinen umfassenden Penetrationstest.
+Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern geprüft: Linien-/Volldrehungsprojekt und Show-/Liftprojekt, Weltwerte in 0,25-s-Schritten gleich. Notizen und lokale Medienpfade werden aus dem freigegebenen Snapshot entfernt. Supabase-Sicherheitsberater nach Härtung: keine Befunde; Performancehinweise nur noch ungenutzte Indizes in der leeren Datenbank. Dies ersetzt keinen umfassenden Penetrationstest.
 
 ## Noch fehlende Abnahmen
 
@@ -46,4 +54,4 @@ Publikations-Roundtrip vom echten SQL-Sanitizer zum gemeinsamen Szenenkern gepr�
 
 ## Reproduktion und CI
 
-Die Befehle stehen in der README. `tests/e2e` startet den vorher gebauten statischen Webstand auf `127.0.0.1:8082`. Ohne optionale Cloudkonfiguration wird der simulierte Zuschauer-RPC-Test ausdrücklich übersprungen; der lokale Editor bleibt vollständig testbar. GitHub Actions prüft Installation, Code, Webbuild und Browser ohne Zugangsdaten; es veröffentlicht keine Deployments. Der erste entfernte CI-Lauf muss gesondert im PR kontrolliert werden.
+Die Befehle stehen in der README. `tests/e2e` startet den vorher gebauten statischen Webstand auf `127.0.0.1:8082`. Ohne optionale Cloudkonfiguration wird der simulierte Zuschauer-RPC-Test ausdrücklich übersprungen; der lokale Editor bleibt vollständig testbar. GitHub Actions prüft Installation, Code, Webbuild und Browser ohne Zugangsdaten; es veröffentlicht keine Deployments. Der oben verlinkte erste entfernte CI-Lauf wurde einschließlich seiner Testzahlen im Log kontrolliert.
