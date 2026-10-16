@@ -1,0 +1,21 @@
+{
+  "cli": { "appVersionSource": "local" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "development", "EXPO_PUBLIC_APP_ENV": "staging" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": { "APP_VARIANT": "development", "EXPO_PUBLIC_APP_ENV": "staging" }
+    },
+    "production": {
+      "env": {
+        "APP_VARIANT": "production",
+        "EXPO_PUBLIC_APP_ENV": "production"
+      }
+    }
+  },
+  "submit": { "production": {} }
+}

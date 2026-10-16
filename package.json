@@ -1,0 +1,35 @@
+{
+  "name": "choreoflow",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "scripts": {
+    "dev:web": "npm run web --workspace @choreoflow/app",
+    "dev:iphone": "npm run iphone --workspace @choreoflow/app",
+    "build:web": "npm run build:web --workspace @choreoflow/app",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "tsx --test packages/core/test/*.test.ts packages/data/test/*.test.ts apps/app/src/export/*.test.ts apps/app/src/audio/*.test.ts",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "serve:web": "node scripts/serve-web.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.5",
+    "@types/three": "0.186.0",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "fake-indexeddb": "6.2.5",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript-eslint": "8.71.2"
+  }
+}

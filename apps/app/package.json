@@ -1,0 +1,48 @@
+{
+  "name": "@choreoflow/app",
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@choreoflow/core": "0.1.0",
+    "@choreoflow/data": "0.1.0",
+    "@choreoflow/ui": "0.1.0",
+    "@react-native-community/slider": "5.2.1",
+    "@react-three/fiber": "9.8.2",
+    "@supabase/supabase-js": "2.118.0",
+    "expo": "~58.0.12",
+    "expo-asset": "~58.0.16",
+    "expo-audio": "~58.0.9",
+    "expo-constants": "~58.0.12",
+    "expo-dev-client": "~58.0.13",
+    "expo-document-picker": "~58.0.4",
+    "expo-file-system": "~58.0.9",
+    "expo-gl": "~58.0.3",
+    "expo-linking": "~58.0.13",
+    "expo-print": "~58.0.6",
+    "expo-router": "~58.0.21",
+    "expo-secure-store": "~58.0.2",
+    "expo-sharing": "~58.0.18",
+    "expo-sqlite": "~58.0.13",
+    "expo-status-bar": "~58.0.3",
+    "jspdf": "4.2.1",
+    "lucide-react-native": "1.58.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
+    "react-native-web": "^0.21.4",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "web": "expo start --web --port 8081",
+    "iphone": "expo start --dev-client",
+    "build:web": "expo export --platform web"
+  },
+  "private": true
+}

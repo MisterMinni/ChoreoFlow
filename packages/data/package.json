@@ -1,0 +1,9 @@
+{
+  "name": "@choreoflow/data",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": { "@choreoflow/core": "0.1.0" },
+  "peerDependencies": { "@supabase/supabase-js": "^2.0.0", "expo-sqlite": "*", "expo-secure-store": "*" }
+}
