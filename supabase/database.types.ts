@@ -246,12 +246,17 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_project_invitation: { Args: { p_token: string }; Returns: Json };
       archive_project: {
         Args: { p_archived: boolean; p_project_id: string };
         Returns: Json;
       };
       create_project: {
         Args: { p_project_id?: string; p_snapshot: Json; p_title: string };
+        Returns: Json;
+      };
+      create_project_invitation: {
+        Args: { p_project_id: string; p_email: string; p_role: string };
         Returns: Json;
       };
       create_share_link: {
@@ -266,7 +271,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_project_access: { Args: { p_project_id: string }; Returns: Json };
+      get_project_team: { Args: { p_project_id: string }; Returns: Json };
       read_share: { Args: { p_token: string }; Returns: Json };
+      revoke_project_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: undefined;
+      };
       revoke_share_link: { Args: { p_link_id: string }; Returns: undefined };
       save_cast: {
         Args: {
@@ -287,7 +298,7 @@ export type Database = {
         Returns: Json;
       };
       set_project_member: {
-        Args: { p_project_id: string; p_role: string; p_user_id: string };
+        Args: { p_project_id: string; p_role: string | null; p_user_id: string };
         Returns: undefined;
       };
     };

@@ -899,7 +899,7 @@ export default function Editor() {
         </>
       )}
       {panel === "Freigaben" && (
-        <CloudPanel project={project} onMessage={setMessage} />
+        <CloudPanel project={project} onMessage={setMessage} onCache={(next) => saveHistory(commitProject(history, next))} />
       )}
       {panel === "Export" && (
         <>

@@ -14,11 +14,14 @@ Durchgängiger Entwicklungsstand mit fortgesetzter Editorarbeit. Einrichtung und
 - Echter JSON-Export/-Import, Web-PNG und mehrseitiger PDF-Export mit Unicode-Schrift und Besetzung. Native Exportadapter noch am Gerät zu prüfen.
 - Supabase-Testdatenbank mit RLS, Rollen, serverseitigen Quoten, CAS-Speichern und Idempotenz, unveränderlichen Veröffentlichungen, widerrufbaren anonymen Links und privatem Medienbucket.
 - Optionale Cloud-Anmeldung und bewusste Cloudkopie in der UI, Veröffentlichungen und schreibgeschützte Linkansicht. Kein automatischer Team-Merge. Echte Registrierung und Mailbestätigung eines Testkontos erfolgreich; Echte App-Anmeldung, Sitzung nach Reload, Cloud-Sichern/Ändern, fester Zuschauerstand und Linkwiderruf im Browser erfolgreich geprüft.
+- Cloud- und Teamliste mit neuen lokalen Arbeitskopien, optionaler Musik-Wiederherstellung, sichtbaren Leser-/Bearbeiterrechten und bewusstem Zurücksichern. Eigene Entwürfe werden nicht ersetzt. Arbeitskopien behalten ihre geladene Serverbasis; Pending-Befehl und Bestätigung werden atomar verglichen, auch zwischen Tabs. Konflikte erhalten Entwurf und ausstehenden Befehl.
+- Projektteam mit E-Mail-gebundenen, sieben Tage gültigen Einladungslinks, Annahme, Rollenwechsel, Entfernung und Widerruf. Kein automatischer Mailversand. Nur Eigentümer sehen Teamadressen; bis zu vier Bearbeiter einschließlich reservierter Einladungen benötigen aktives Pro des Eigentümers. Serverseitig auch bei Annahme und Tarifablauf geprüft.
+- Private Musikübertragung mit Originalbytes, 20-MB-Grenze, Format-/MIME-/Größenprüfung und Decoder-Dauerprüfung beim lokalen Cachen. Konfligierende Dateien überschreiben keinen vorhandenen Cache; wiederholte Uploads vergleichen vorhandene Bytes. Öffentliche Probenlinks bleiben ohne Musik. Native Adapter implementiert, noch kein iPhone-Nachweis.
 - Vercel-Projekt/Preview-Umgebungsvariablen eingerichtet; manuelle Preview des geprüften Commits READY. Automatische Git-Deployments deaktiviert; Produktionsbuild absichtlich gesperrt. Supabase Site URL und exakte Redirect-Allowlist gespeichert und erneut geprüft.
 
 ## Aktuelle lokale Abnahme
 
-TypeScript und ESLint erfolgreich, **86/86 Tests** (46 Kern, 33 Daten, 4 PDF, 3 Audio), frischer Webexport und **14/14 Browsertests** bestanden. Reale Cloudprobe zusätzlich mit synthetischen Daten: Anmeldung/Reload, Serverstände 1 bis 3, unveränderliche Veröffentlichung, getrennter anonymer Viewer und zwei erfolgreiche Linkwiderrufe. Kontowechsel, verspätete Downloads und veraltete Editoren sind gegen unbemerkte Überschreibung abgesichert. Details: `ACCEPTANCE.md`.
+TypeScript und ESLint erfolgreich, **115/115 Tests** (46 Kern, 52 Daten, 4 PDF, 13 Audio), frischer Webexport. **20/20 Browsertests** bestanden (1,4 min); Details in `ACCEPTANCE.md`. Reale Cloudprobe zusätzlich mit synthetischen Daten: Anmeldung/Reload, Serverstände 1 bis 4, unveränderliche Veröffentlichung, getrennter anonymer Viewer und zwei erfolgreiche Linkwiderrufe. Einladungs-, Isolations- und Storage-Service-Tests auch in Supabase bestanden und vollständig zurückgerollt. Eine echte Leser-Einladung an eine synthetische Adresse wurde erstellt und widerrufen; kein Mailversand. Privater Upload und Download einer Zwei-Sekunden-WAV (88.244 Byte) sowie Öffnen als neue Arbeitskopie mit Musik im echten Browser erfolgreich. Dies ist noch keine Zwei-Konto-/Mehrgeräte-Abnahme. Kontowechsel, verspätete Downloads und veraltete Editoren sind gegen unbemerkte Überschreibung abgesichert.
 
 ## Reviewbarer und bereitgestellter Stand
 
@@ -36,13 +39,13 @@ Spätere reine Test-/Dokumentationskorrekturen ändern diesen bereitgestellten A
 | M1 Nutzbarer Editor | Formationsmanagement einschließlich Vorschau und Undo vorhanden; vollständige Manipulation, Pfadwerkzeuge und native Gesten fehlen |
 | M2 Bewegungen | Gruppenrotation und Konfliktkern; vollständige Gruppenmuster, Änderungsvorschläge und Lifteditor fehlen |
 | M3 Musik und Planung | Ein Clip, Counts, Web-Wellenform, Notizen; Split, Requisiteneditor und vollständige Timing-UI fehlen |
-| M4 Cloud und Team | Echter Login/Reload/Sichern/Publizieren/Widerruf geprüft; Team-/Ordneroberfläche, Cloud-Restore-UI, Realtime-Merge und Medien-Sync fehlen |
+| M4 Cloud und Team | Teamverwaltung, Einladungen, Arbeitskopien, Cloud-Restore-UI und privater Musiktransfer implementiert; Ordnervererbung, Realtime-Merge und umfassende Mehrgeräte-Abnahme fehlen |
 | M5 Verkauf und Ausgaben | Serverseitige Tarifregeln und PDF/JSON/Web-PNG; Store-Käufe, Kontolöschung, Klärung des Auth-Mail-Trackings vor Produktion, native PNG, Medienpakete und echter Videoexport fehlen |
 | M6 Abnahme | Nicht abgeschlossen: Gerät, Performance, vollständige Rechte-/Kauf-/Recovery-Flows und Storefreigabe fehlen |
 
 ## Noch notwendige Produktarbeit
 
-Keine dieser Anforderungen gilt als stillschweigend gestrichen: Pinch/Pan, Auswahlrechteck, präzise Pfadgriffe, 3D-Manipulation, vollständige Personenverwaltung, wiederverwendbare Formationsbibliothek, Gruppenbewegungen jenseits der Rotations-UI, Tempo-/Markereditor, Audio-Split/Mehrclip, Requisiten-/Liftbearbeitung, Ordnerrechte/Teamverwaltung, Konfliktauflösung bei mehreren Geräten, sichere Medienübertragung, Gerätebackups/Restore, Abo- und Kaufwiederherstellung, echter Videoexport, Datenschutz-/Storeangaben und Accessibility-Abnahme.
+Keine dieser Anforderungen gilt als stillschweigend gestrichen: Pinch/Pan, Auswahlrechteck, präzise Pfadgriffe, 3D-Manipulation, vollständige Personenverwaltung, wiederverwendbare Formationsbibliothek, Gruppenbewegungen jenseits der Rotations-UI, Tempo-/Markereditor, Audio-Split/Mehrclip, Requisiten-/Liftbearbeitung, Ordnerrechte und Rechtevererbung, Konfliktauflösung bei mehreren Geräten, serverseitige Prüfung des Medieninhalts, bewusst freigegebene Musik in Veröffentlichungen, Gerätebackups/Restore, Abo- und Kaufwiederherstellung, echter Videoexport, Datenschutz-/Storeangaben und Accessibility-Abnahme.
 
 ## Externe Voraussetzungen
 
@@ -53,4 +56,4 @@ Keine dieser Anforderungen gilt als stillschweigend gestrichen: Pinch/Pan, Auswa
 
 ## Nächster ausführbarer Schritt
 
-Nach Lesen von `ACCEPTANCE.md` zunächst die noch fehlende Bundle-ID und Apple-Signierungszugänge bestätigen. Anschließend einen echten iPhone-Development-Build erstellen und 3D/SQLite/Audio/Export am Gerät abnehmen. Unabhängige Editorarbeit kann sofort lokal fortgesetzt werden. Priorität: Pfad-/Gruppenwerkzeuge, anschließend Cloud-Wiederherstellung, Teamkonflikte und Medien-Sync. Vor jedem Release die offenen Punkte von `STORE_RELEASE.md` und `DEPENDENCIES.md` beheben bzw. bewerten. Der vorhandene Entwicklungsstand bleibt reproduzierbar startbar.
+Die neue Team-/Medienoberfläche auf einem zweiten echten Konto und Gerät abnehmen; anschließend Ordnervererbung, bewusste Konfliktauflösung und Medienfreigabe für Veröffentlichungen ergänzen. Pfad-/Gruppenwerkzeuge können unabhängig fortgesetzt werden. Für einen echten iPhone-Development-Build fehlen weiterhin Bundle-ID und Apple-Signierung; dann 3D/SQLite/Audio/Export am Gerät abnehmen. Vor jedem Release die offenen Punkte von `STORE_RELEASE.md` und `DEPENDENCIES.md` beheben bzw. bewerten. Der vorhandene Entwicklungsstand bleibt reproduzierbar startbar.

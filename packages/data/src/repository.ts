@@ -102,6 +102,19 @@ export class LocalProjectRepository implements ProjectRepository {
     if (key === 'theme') { await this.setTheme(value as ThemePreference); return; }
     await this.transaction(state => { state.settings[key] = clone(value); return null; });
   }
+  async compareAndSetSetting<T>(key: string, expected: T | undefined, value: T): Promise<boolean> {
+    safeKey(key);
+    const previous = expected === undefined ? undefined : clone(expected);
+    const next = clone(value);
+    if (key === 'theme' && !['system', 'light', 'dark'].includes(next as string)) throw new Error('Unbekanntes Erscheinungsbild.');
+    return this.transaction(state => {
+      if (!same(key === 'theme' ? state.theme : state.settings[key], previous)) return false;
+      if (key === 'theme') state.theme = next as ThemePreference;
+      else state.settings[key] = next;
+      state.revision += 1;
+      return true;
+    }, false);
+  }
   async setTheme(theme: ThemePreference): Promise<void> {
     if (!['system', 'light', 'dark'].includes(theme)) throw new Error('Unbekanntes Erscheinungsbild.');
     await this.transaction(state => { state.theme = theme; return null; });

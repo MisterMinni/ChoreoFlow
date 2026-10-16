@@ -15,6 +15,29 @@ for (const [name, makeStore] of [
   ['memory', () => new MemoryStore()],
   ['IndexedDB', () => new IndexedDbStore('test-choreoflow', new IDBFactory())],
 ] as const) {
+  test(`${name}: setting compare-and-set is atomic between independent repositories`, async () => {
+    const store = makeStore();
+    const first = new LocalProjectRepository(store), second = new LocalProjectRepository(store);
+    try {
+      type Setting = { revision: number; pending: string | null };
+      const initial: Setting = { revision: 7, pending: null };
+      const pendingA: Setting = { revision: 7, pending: 'command-a' };
+      const pendingB: Setting = { revision: 7, pending: 'command-b' };
+      assert.equal(await first.compareAndSetSetting('origin:test', undefined, initial), true);
+      const outcomes = await Promise.all([
+        first.compareAndSetSetting('origin:test', initial, pendingA),
+        second.compareAndSetSetting('origin:test', initial, pendingB),
+      ]);
+      assert.equal(outcomes.filter(Boolean).length, 1);
+      const winner = outcomes[0] ? pendingA : pendingB;
+      assert.deepEqual(await second.getSetting('origin:test'), winner);
+      const before = await first.load();
+      assert.equal(await first.compareAndSetSetting('origin:test', initial, { revision: 8, pending: null }), false);
+      assert.deepEqual(await second.load(), before);
+      assert.equal(await second.compareAndSetSetting('origin:test', winner, { revision: 8, pending: null }), true);
+      assert.deepEqual(await first.getSetting('origin:test'), { revision: 8, pending: null });
+    } finally { await store.close?.(); }
+  });
   test(`${name}: deleting the last project never recreates demo data`, async () => {
     const store = makeStore(); let seeds = 0;
     const seed = () => { seeds++; return [createDemoProject('line')]; };

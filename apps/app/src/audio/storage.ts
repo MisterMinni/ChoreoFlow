@@ -1,1 +1,1 @@
-export { pickAudio, resolveAudio, getAudioWaveform } from './storage.web';
+export { pickAudio, resolveAudio, getAudioWaveform, readAudioBytes, cacheAudioBytes } from './storage.web';

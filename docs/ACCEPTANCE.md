@@ -7,10 +7,10 @@ Dieses Protokoll trennt implementierte Funktionen, tatsächlich ausgeführte Pr�
 | Prüfung | Tatsächlicher Nachweis |
 | --- | --- |
 | Frische Installation | `npm ci` erfolgreich, 751 Pakete aus dem Lockfile; `expo install --check`: Dependencies are up to date |
-| `npm run check` | TypeScript ohne Fehler, ESLint ohne Warnungen, 86/86 Tests bestanden: 46 Kern, 33 Datenadapter, 4 PDF, 3 Audio |
+| `npm run check` | TypeScript ohne Fehler, ESLint ohne Warnungen, 115/115 Tests bestanden: 46 Kern, 52 Datenadapter, 4 PDF, 13 Audio |
 | `npm run build:web` | Expo-58-SPA erfolgreich exportiert; echte JS-/Asset-Dateien unter `apps/app/dist` |
 | iOS-JavaScript-Export | `expo export --platform ios --output-dir ../../.local/ios-bundle` erfolgreich: 3.914 Module, ein Hermes-Bundle (11 MB), 23 Assets. Ausschließlich JS-/Asset-Export, kein signierter Native-Build und kein Gerätetest |
-| `npm run test:e2e` | Abschließend 14/14 Chromium-Tests gegen den frisch erzeugten statischen Build bestanden (1,1 min); keine Testwiederholungen zur Kaschierung von Fehlern |
+| `npm run test:e2e` | Team-/Medienerweiterung: abschließend 20/20 Chromium-Abläufe gegen den frisch erzeugten statischen Build bestanden (1,4 min) |
 | Editor | Neues Projekt, Position bearbeiten, Undo/Redo, Formation anlegen, Muster anwenden, Reload mit erhaltener Historie und Playback |
 | 3D | Echtes Chromium-WebGL-Canvas, Kamerwechsel ohne Seitenfehler; Screenshot `test-results/editor-3d.png` |
 | Kleine Ansicht | 390×844, dunkles Theme, bedienbarer Editor ohne horizontalen Überlauf |
@@ -68,11 +68,30 @@ Zusätzlich gefundene und korrigierte Fehler:
 
 Die 86 Fach-/Daten-/Export-/Audiotests umfassen 24 neue Formationstests und zwölf neue Datenadaptertests. Alle 14 Browserabläufe bestanden nach Korrektur der zuvor fehlenden Web-Auswahlkennzeichnung (`aria-pressed`). Drei neue Abläufe prüfen Formationskopie, Reihenfolge, Löschung, vollständige Drehungen, JSON-Roundtrip, Reload/Undo/Redo sowie das 390-px-Layout. Token-Pinning wird auch mit dem echten Supabase-JS-Requestpfad und simuliertem HTTP geprüft; das ist kein weiterer echter Zwei-Konto-Cloudtest.
 
+## Team- und Medienerweiterung
+
+Neue Arbeitskopien haben ausdrücklich eine eigene lokale Projektkennung und eine unveränderte Zuordnung zum Serverprojekt. Sie übernehmen dessen geladene Revision, nicht einen beliebigen später abgefragten Stand. Leser dürfen die Cloudkopie nicht zurückschreiben; lokale Änderungen und JSON-Export bleiben möglich. Eigentümer/Bearbeiter nutzen CAS und persistente Befehls-IDs. Ein im Review reproduzierter Mehrtab-Fehler wurde korrigiert: Anlage und Bestätigung eines Pending-Befehls vergleichen und ersetzen den gesamten Origin atomar. Regressionen prüfen konkurrierende Repositoryinstanzen in Memory und IndexedDB sowie ein verspätetes ACK.
+
+Die Migration `20261016090240_project_invitations.sql` wurde im ausdrücklich freigegebenen Testprojekt angewendet. `supabase/tests/invitations.sql` und die angepasste `isolation.sql` bestanden dort vollständig, anschließend Rollback der synthetischen Konten und Mitgliedschaften. Geprüft: bestätigte Datenbank-E-Mail statt manipulierbarer JWT-/Profilangaben, falsches Konto, unbestätigte Adresse, Ablauf, Widerruf, erneute Annahme nach Entfernung, Owner-only-Adressen, Rollenwechsel, vier reservierte Bearbeitungsplätze, Pro-Ablauf und anonymer Zugriff. Security-Advisor weiterhin nur die bekannte Warnung zur deaktivierten Leaked-Password-Protection; keine neue RLS-Warnung.
+
+Im echten Browser ließ sich für das synthetische Cloud-Prüfprojekt eine Leser-Einladung an `choreoflow-reader@example.invalid` erstellen und widerrufen. SQL bestätigte eine widerrufene, nicht angenommene Einladung. Es wurde keine E-Mail versendet. Der tatsächliche Beitritt eines zweiten echten Kontos bleibt ungetestet; Rollen und Annahme sind durch die SQL-Prüfung abgedeckt.
+
+Der erste echte Musik-Upload deckte einen Fehler im Quoten-Trigger auf: Supabase Storage prüft den Zugriff zunächst als angemeldeter Benutzer, schreibt das Objekt anschließend aber intern als `service_role` ohne Benutzer-Subjekt. Migration `20261016091914_storage_service_quota.sql` berücksichtigt diesen tatsächlichen Datenbankrollenwechsel, bindet Objektpfad und `owner_id` weiterhin an den Projekteigentümer und prüft Größe/Quote auch beim finalen Schreiben. RLS und Grants bleiben unverändert. `storage-service.sql` und die angepasste `isolation.sql` bestanden im echten Testprojekt; alle SQL-Testfixtures wurden zurückgerollt. Manipulierbare JWT-Rollenangaben reichen für die interne Schreibberechtigung nicht aus.
+
+Nach der Korrektur bestanden privater Upload und authentifizierter Download im echten Browser: eine generierte Zwei-Sekunden-WAV mit 88.244 Byte, anschließend bestätigter lokaler Cache. SQL bestätigte genau ein Objekt mit dieser Größe im nicht öffentlichen Bucket. Das ist ein Test mit demselben echten Konto und Browser, kein zweites Gerät oder iPhone. Der Security-Advisor meldet weiterhin ausschließlich die bereits bekannte Warnung zur deaktivierten Leaked-Password-Protection.
+
+Neue Browserregressionen verwenden vollständig simulierte Supabase-Antworten: Teamverwaltung/Einladungswiderruf ohne Mail-API, Leserrechte, stabile Retry-Befehle bei Teamkonflikten und Einladungstoken ausschließlich im Fragment/POST. Zwei Medienabläufe prüfen echte Chromium-Dekodierung einer generierten Zwei-Sekunden-WAV, byteidentischen IndexedDB-Cache über SHA-256, Wiedergabe nach Reload ohne zusätzlichen Download und Abweisung abgeschnittener Downloads ohne Arbeitskopie/Origin. Keine Aussage über iPhone oder reale zweite Geräte.
+
+CI erhält ausschließlich synthetische öffentliche Cloudkonfiguration, damit auch diese Mock-Abläufe ausgeführt werden. Sie verwendet keine echten Zugangsdaten und keine reale Supabase-Instanz.
+
+Abschließende lokale Abnahme: 115/115 Fachtests, TypeScript und ESLint ohne Fehler/Warnungen, frischer Expo-Webexport sowie 20/20 Browserabläufe bestanden. Ein vorheriger paralleler Aufruf zweier Playwright-Prozesse kollidierte im gemeinsamen Trace-Ordner; die getrennte Wiederholung und danach der vollständige Einprozesslauf bestanden. Dies war ein Test-Artefaktkonflikt, kein nachgewiesener Appfehler.
+
 ## Noch fehlende Abnahmen
 
 - Physisches iPhone: native SQLite/SecureStore/Dateien, 3D, Gesten, Audio-Unterbrechung, PDF-Teilen und Hintergrundverhalten.
 - Passwortwiederherstellung, Kontolöschung und vollständiger Konto-Datenexport; Umgang mit dem nachgewiesenen Auth-Link-/Öffnungstracking vor Produktion. Registrierung, protokollierte Zustellung, Mailbestätigung, App-Anmeldung und Sitzung nach Reload des einen echten Testkontos sind bereits nachgewiesen.
-- Teamverwaltung, Ordnerrechte, gleichzeitige Bearbeitung über mehrere Geräte, Medien-Sync und Konfliktauflösung.
+- Echter Beitritt eines zweiten Kontos und gleichzeitige Bearbeitung über mehrere Geräte; Ordnerrechte/Vererbung und interaktive Konfliktauflösung. Teamverwaltung und neue lokale Cloud-Arbeitskopien sind implementiert und wie oben geprüft.
+- Serverseitige Audio-Inhaltsprüfung über Dateigröße/MIME hinaus, veröffentlichte Musik mit eigener Zugriffsfreigabe, Medienbackups und native Medienübertragung. Browser-Header/Decoder/Cache sind geprüft.
 - Native PNG, portables Medienpaket, Videoexport, StoreKit-Kauf/Restore/Entitlement-Verifizierung.
 - Performance bei 100 Personen/200 Formationen auf Zielgeräten; systematische Barrierefreiheit und Safari.
 - Datenbank- und Medienwiederherstellung, Produktionskonfiguration, Datenschutz-/Storeangaben und TestFlight.
@@ -80,4 +99,4 @@ Die 86 Fach-/Daten-/Export-/Audiotests umfassen 24 neue Formationstests und zwö
 
 ## Reproduktion und CI
 
-Die Befehle stehen in der README. `tests/e2e` startet den vorher gebauten statischen Webstand auf `127.0.0.1:8082`. Ohne optionale Cloudkonfiguration wird der simulierte Zuschauer-RPC-Test ausdrücklich übersprungen; der lokale Editor bleibt vollständig testbar. GitHub Actions prüft Installation, Code, Webbuild und Browser ohne Zugangsdaten; es veröffentlicht keine Deployments. Der oben verlinkte erste entfernte CI-Lauf wurde einschließlich seiner Testzahlen im Log kontrolliert.
+Die Befehle stehen in der README. `tests/e2e` startet den vorher gebauten statischen Webstand auf `127.0.0.1:8082`. Ohne optionale Cloudkonfiguration werden die simulierten Cloudabläufe ausdrücklich übersprungen; der lokale Editor bleibt vollständig testbar. GitHub Actions baut mit synthetischer öffentlicher Konfiguration und prüft alle 20 Browserabläufe ohne echte Zugangsdaten; es veröffentlicht keine Deployments. Die entfernten CI-Läufe sind mit ihren tatsächlich beobachteten Ergebnissen oben dokumentiert.

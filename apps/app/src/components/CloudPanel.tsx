@@ -1,9 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { commitProject, createHistory, type Project } from "@choreoflow/core";
-import { getCloudService, getRepository } from "@choreoflow/data";
+import {
+  getCloudService,
+  getRepository,
+  TeamService,
+  saveCloudWorkcopy,
+  type CloudOrigin,
+} from "@choreoflow/data";
 import { Button, Card, Field, Label } from "@choreoflow/ui";
 import { saveProjectFile } from "../transfer";
+import { TeamPanel } from "./TeamPanel";
+import { CloudMediaPanel } from "./CloudMediaPanel";
 
 type Account = { id: string; email?: string };
 type Uploaded = { fingerprint: string; id: string; revision: number };
@@ -13,14 +21,18 @@ type SavedLink = {
   expiresAt: string;
   revoked: boolean;
 };
-type Props = { project: Project; onMessage: (text: string) => void };
+type Props = {
+  project: Project;
+  onMessage: (text: string) => void;
+  onCache: (project: Project) => Promise<void>;
+};
 type ActionScope = { generation: number; projectId: string };
 const errorText = (error: unknown) =>
   error instanceof Error
     ? error.message
     : "Die Cloud-Aktion konnte nicht abgeschlossen werden.";
 
-export function CloudPanel({ project, onMessage }: Props) {
+export function CloudPanel({ project, onMessage, onCache }: Props) {
   const [configuration] = useState(() => {
     try {
       return { service: getCloudService(), error: "" };
@@ -36,6 +48,10 @@ export function CloudPanel({ project, onMessage }: Props) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [uploaded, setUploaded] = useState<Uploaded | null>(null);
+  const [origin, setOrigin] = useState<CloudOrigin | null>(null);
+  const [originLoaded, setOriginLoaded] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [links, setLinks] = useState<SavedLink[]>([]);
   const [freshLink, setFreshLink] = useState<{
     id: string;
@@ -110,9 +126,22 @@ export function CloudPanel({ project, onMessage }: Props) {
     setUploaded(null);
     setLinks([]);
     setFreshLink(null);
-    if (userId) {
-      void getRepository({ identity: { kind: "cloud", userId } })
-        .then(async (repository) => {
+    setOriginLoaded(false);
+    setOrigin(null);
+    setCanEdit(false);
+    setIsOwner(false);
+    void getRepository()
+      .then(async (local) => {
+        const source = await local.getSetting<CloudOrigin>(
+          `origin:${project.id}`,
+        );
+        if (!isCurrentSettingsRead()) return;
+        setOrigin(source ?? null);
+        setOriginLoaded(true);
+        if (userId) {
+          const repository = await getRepository({
+            identity: { kind: "cloud", userId },
+          });
           const [saved, savedLinks] = await Promise.all([
             repository.getSetting<Uploaded>(`upload:${project.id}`),
             repository.getSetting<SavedLink[]>(`links:${project.id}`),
@@ -121,15 +150,34 @@ export function CloudPanel({ project, onMessage }: Props) {
             setUploaded(saved ?? null);
             setLinks(savedLinks ?? []);
           }
-        })
-        .catch((error) => {
-          if (isCurrentSettingsRead()) setStatus(errorText(error));
-        });
-    }
+          const cloudId =
+            source?.userId === userId
+              ? source.cloudProjectId
+              : !source
+                ? saved?.id
+                : undefined;
+          if (cloudId && service) {
+            const access = await new TeamService(service).getAccess(
+              cloudId,
+              userId,
+            );
+            if (isCurrentSettingsRead()) {
+              setCanEdit(access.can_edit);
+              setIsOwner(access.role === "owner");
+            }
+          } else if (!source && isCurrentSettingsRead()) {
+            setCanEdit(true);
+            setIsOwner(true);
+          }
+        }
+      })
+      .catch((error) => {
+        if (isCurrentSettingsRead()) setStatus(errorText(error));
+      });
     return () => {
       live = false;
     };
-  }, [userId, project.id]);
+  }, [userId, project.id, service]);
 
   function isCurrent(scope: ActionScope) {
     return (
@@ -168,8 +216,35 @@ export function CloudPanel({ project, onMessage }: Props) {
 
   async function upload(scope: ActionScope) {
     if (!service || !account) return;
+    if (!originLoaded)
+      throw new Error("Die Cloud-Zuordnung wird noch geladen.");
     const snapshot = structuredClone(project);
     const sourceFingerprint = JSON.stringify(snapshot);
+    if (origin) {
+      const local = await getRepository();
+      requireCurrent(scope);
+      const record = await saveCloudWorkcopy(
+        service,
+        local,
+        snapshot,
+        account.id,
+      );
+      requireCurrent(scope);
+      const repository = await getRepository({
+        identity: { kind: "cloud", userId: account.id },
+      });
+      await repository.setSetting(`upload:${snapshot.id}`, record);
+      const savedOrigin = await local.getSetting<CloudOrigin>(`origin:${snapshot.id}`);
+      if (isCurrent(scope)) {
+        setUploaded(record);
+        setOrigin(savedOrigin ?? origin);
+      }
+      report(
+        `Arbeitskopie im Teamprojekt gesichert · Serverstand ${record.revision}.`,
+        scope,
+      );
+      return;
+    }
     const repository = await getRepository({
       identity: { kind: "cloud", userId: account.id },
     });
@@ -397,8 +472,31 @@ export function CloudPanel({ project, onMessage }: Props) {
           >
             Abmelden
           </Button>
-          <Button primary disabled={busy} onPress={() => void run(upload)}>
-            {busy ? "Bitte warten …" : "Im Testkonto sichern"}
+          {origin ? (
+            <Card>
+              <Label bold>Arbeitskopie eines Cloud-Projekts</Label>
+              <Label muted size={12}>
+                {origin.userId !== account.id
+                  ? "Diese Kopie gehört zu einem anderen angemeldeten Konto. Melde dich mit dem ursprünglichen Konto an. Dein lokaler Entwurf bleibt exportierbar."
+                  : `Geladene Basis: Serverstand ${origin.revision}. ${canEdit ? "Änderungen können bewusst ins Teamprojekt übertragen werden." : "Leserecht oder Zugriff entzogen: Änderungen bleiben lokal und können exportiert werden."}`}
+              </Label>
+            </Card>
+          ) : null}
+          <Button
+            primary
+            disabled={
+              busy ||
+              !originLoaded ||
+              !canEdit ||
+              (!!origin && origin.userId !== account.id)
+            }
+            onPress={() => void run(upload)}
+          >
+            {busy
+              ? "Bitte warten …"
+              : origin
+                ? "Arbeitskopie im Teamprojekt sichern"
+                : "Im Testkonto sichern"}
           </Button>
           <Label muted size={12}>
             {uploaded?.fingerprint === fingerprint
@@ -410,7 +508,8 @@ export function CloudPanel({ project, onMessage }: Props) {
               busy ||
               !uploaded ||
               uploaded.fingerprint !== fingerprint ||
-              Platform.OS !== "web"
+              Platform.OS !== "web" ||
+              !isOwner
             }
             onPress={() => void run(publish)}
           >
@@ -477,6 +576,36 @@ export function CloudPanel({ project, onMessage }: Props) {
               </Button>
             </Card>
           ))}
+          {(
+            origin?.userId === account.id
+              ? origin.cloudProjectId
+              : !origin
+                ? uploaded?.id
+                : undefined
+          ) ? (
+            <>
+              <TeamPanel
+                key={`team:${account.id}:${project.id}`}
+                service={service}
+                userId={account.id}
+                cloudProjectId={origin?.cloudProjectId ?? uploaded!.id}
+                onMessage={onMessage}
+              />
+              <CloudMediaPanel
+                key={`media:${account.id}:${project.id}`}
+                service={service}
+                userId={account.id}
+                cloudProjectId={origin?.cloudProjectId ?? uploaded!.id}
+                project={project}
+                onCache={onCache}
+              />
+            </>
+          ) : (
+            <Label muted size={12}>
+              Sichere das Projekt, um das Team und die private Musikübertragung
+              zu verwalten.
+            </Label>
+          )}
         </>
       )}
       {status ? (

@@ -173,3 +173,46 @@ test('publication and share mutations require the account captured by their call
   await assert.rejects(service.revokeShareLink('link-a', identity.userId), /Konto/);
   assert.equal(requests.length, 1);
 });
+
+test('private audio upload and download pin the verified account in real SDK requests', async () => {
+  const requests: { token: string; method: string; path: string }[] = [];
+  const bytes = new Uint8Array([82, 73, 70, 70]).buffer;
+  const { sdk } = sdkClient(async (input, init) => {
+    requests.push({ token: new Headers(init?.headers).get('Authorization')!, method: init?.method ?? 'GET', path: String(input) });
+    return init?.method === 'POST' ? new Response(JSON.stringify({ Key: 'audio' }), { status: 200 }) : new Response(bytes, { status: 200 });
+  });
+  const service = new CloudService(sdk);
+  await service.uploadMedia('owner/project/asset', bytes, 'audio/wav', identity.userId);
+  assert.deepEqual(await service.downloadMedia('owner/project/asset', 4, identity.userId), bytes);
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every(request => request.token === `Bearer ${identity.userId}:1`));
+  assert.ok(requests.every(request => request.path.includes('/storage/v1/object/project-media/')));
+});
+
+test('private audio retry accepts identical bytes but never overwrites a collision', async () => {
+  const bytes = new Uint8Array([1, 2, 3]).buffer; let changed = false;
+  const { sdk } = sdkClient(async (_input, init) => init?.method === 'POST'
+    ? new Response(JSON.stringify({ statusCode: '409', message: 'The resource already exists' }), { status: 400 })
+    : new Response(changed ? new Uint8Array([1, 2, 4]).buffer : bytes, { status: 200 }));
+  const service = new CloudService(sdk);
+  await service.uploadMedia('owner/project/asset', bytes, 'audio/wav', identity.userId);
+  changed = true;
+  await assert.rejects(service.uploadMedia('owner/project/asset', bytes, 'audio/wav', identity.userId), /andere Datei/);
+});
+
+test('late media responses cannot enter a different account cache and size is checked', async () => {
+  let switchAccount = true;
+  const { sdk, auth } = sdkClient(async () => {
+    if (switchAccount) auth.userId = otherId;
+    return new Response(new Uint8Array([1, 2, 3]).buffer, { status: 200 });
+  });
+  const service = new CloudService(sdk);
+  await assert.rejects(service.downloadMedia('owner/project/asset', 3, identity.userId), /Konto/);
+  auth.userId = identity.userId; switchAccount = false;
+  await assert.rejects(service.downloadMedia('owner/project/asset', 4, identity.userId), /unvollständig/);
+});
+
+test('authenticated team RPC cannot commit its response across an account switch', async () => {
+  const { sdk, auth } = sdkClient(async () => { auth.userId = otherId; return new Response(JSON.stringify({ role: 'owner' }), { status: 200 }); });
+  await assert.rejects(new CloudService(sdk).authenticatedRpc('get_project_access', { p_project_id: 'synthetic' }, identity.userId), /Konto/);
+});

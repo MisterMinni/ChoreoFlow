@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   ScrollView,
@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowRight,
   Plus,
@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Upload,
   Layers,
+  Cloud,
 } from "lucide-react-native";
 import { Label, Button, Field, Card, useTheme } from "@choreoflow/ui";
 import {
@@ -31,6 +32,7 @@ import {
 import { Stage2D } from "../components/Stage2D";
 import { useApp } from "../state";
 import { pickProject } from "../transfer";
+import { CloudLibraryPanel } from "../components/CloudLibraryPanel";
 
 export const templateLabels: [TemplateType, string][] = [
   ["line", "Linie"],
@@ -44,15 +46,22 @@ export const templateLabels: [TemplateType, string][] = [
   ["double-diagonal", "Zwei Diagonalen"],
 ];
 export default function Library() {
+  const params = useLocalSearchParams<{ "#": string }>();
   const app = useApp(),
     t = useTheme(),
     wide = useWindowDimensions().width > 850;
-  const [tab, setTab] = useState("Projekte"),
+  const [tab, setTab] = useState(
+      params["#"]?.startsWith("invite=") ? "Cloud & Team" : "Projekte",
+    ),
     [query, setQuery] = useState(""),
     [creating, setCreating] = useState(false),
     [name, setName] = useState(""),
     [count, setCount] = useState("12"),
     [busy, setBusy] = useState(false);
+  const fragment = params["#"];
+  useEffect(() => {
+    if (fragment?.startsWith("invite=")) setTab("Cloud & Team");
+  }, [fragment]);
   const open = (id: string) => router.push(`/editor/${encodeURIComponent(id)}`);
   const act = async (task: () => Promise<unknown>) => {
     setBusy(true);
@@ -73,6 +82,7 @@ export default function Library() {
         [FolderOpen, "Projekte"],
         [Users, "Besetzungen"],
         [LayoutGrid, "Vorlagen"],
+        [Cloud, "Cloud & Team"],
       ].map(([Icon, title]) => {
         const I = Icon as typeof FolderOpen;
         return (
@@ -229,7 +239,11 @@ export default function Library() {
               </Button>
             </View>
             <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-between",
+              }}
             >
               {nav}
             </View>
@@ -611,6 +625,7 @@ export default function Library() {
               </Card>
             </>
           )}
+          {tab === "Cloud & Team" && <CloudLibraryPanel />}
           <Label size={11} muted style={{ marginTop: 18 }}>
             CHOREOFLOW · DEIN RAUM FÜR BEWEGUNG
           </Label>

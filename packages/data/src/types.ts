@@ -35,6 +35,8 @@ export interface ProjectRepository {
   remove(projectId: string): Promise<void>;
   getSetting<T = unknown>(key: string): Promise<T | undefined>;
   setSetting<T>(key: string, value: T): Promise<void>;
+  /** Compares and replaces one setting inside the storage transaction, including across tabs. */
+  compareAndSetSetting<T>(key: string, expected: T | undefined, value: T): Promise<boolean>;
   setTheme(theme: ThemePreference): Promise<void>;
   listCasts(): Promise<Cast[]>;
   saveCast(cast: Cast): Promise<void>;

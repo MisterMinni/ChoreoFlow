@@ -5,6 +5,7 @@ insert into auth.users(id,aud,role,email) values
 ('10000000-0000-4000-8000-000000000001','authenticated','authenticated','cloud-owner@example.invalid'),
 ('10000000-0000-4000-8000-000000000002','authenticated','authenticated','cloud-outsider@example.invalid'),
 ('10000000-0000-4000-8000-000000000003','authenticated','authenticated','cloud-member@example.invalid');
+update auth.users set email_confirmed_at=now() where id in ('10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 
@@ -70,10 +71,13 @@ begin
     raise exception using errcode='XX000',message='FAIL null archive flag';
   exception when invalid_parameter_value then null; end;
   begin
-    perform public.set_project_member('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000003','editor');
+    perform public.create_project_invitation('20000000-0000-4000-8000-000000000001','cloud-member@example.invalid','editor');
     raise exception using errcode='XX000',message='FAIL free editor invitation';
   exception when insufficient_privilege then null; end;
-  perform public.set_project_member('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000003','reader');
+  result:=public.create_project_invitation('20000000-0000-4000-8000-000000000001','cloud-member@example.invalid','reader');
+  perform set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+  perform public.accept_project_invitation(result->>'token');
+  perform set_config('request.jwt.claims','{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
   result:=public.publish_project('20000000-0000-4000-8000-000000000001',2,false);
   if result->'snapshot'->'notes'<>'[]'::jsonb or result->'snapshot'->'audio'<>'{"assets":[],"clips":[]}'::jsonb or result->'snapshot'->'lifts'->0->>'note'<>'' or result->'snapshot' ? 'privateMetadata' then raise exception 'FAIL public snapshot privacy'; end if;
   perform set_config('choreoflow.publication',result->>'id',true);
@@ -96,16 +100,16 @@ begin
     raise exception using errcode='XX000',message='FAIL cast limit';
   exception when raise_exception then if sqlerrm<>'CAST_LIMIT' then raise; end if; end;
   -- Metadata rows only; no external object is uploaded by this SQL test.
-  insert into storage.objects(bucket_id,name,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/a.wav','{"size":10}');
+  insert into storage.objects(bucket_id,name,owner_id,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/a.wav','10000000-0000-4000-8000-000000000001','{"size":10}');
   update storage.objects set metadata='{"size":20}' where bucket_id='project-media';
   if (select count(*) from storage.objects where bucket_id='project-media')<>1 then raise exception 'FAIL own media read/upsert'; end if;
   begin
-    insert into storage.objects(bucket_id,name,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/oversize.wav','{"size":20971521}');
+    insert into storage.objects(bucket_id,name,owner_id,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/oversize.wav','10000000-0000-4000-8000-000000000001','{"size":20971521}');
     raise exception using errcode='XX000',message='FAIL per-file size';
   exception when invalid_parameter_value then null; end;
-  insert into storage.objects(bucket_id,name,metadata) select 'project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/quota-'||n||'.wav','{"size":20971520}'::jsonb from generate_series(1,4) n;
+  insert into storage.objects(bucket_id,name,owner_id,metadata) select 'project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/quota-'||n||'.wav','10000000-0000-4000-8000-000000000001','{"size":20971520}'::jsonb from generate_series(1,4) n;
   begin
-    insert into storage.objects(bucket_id,name,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/quota-5.wav','{"size":20971520}');
+    insert into storage.objects(bucket_id,name,owner_id,metadata) values('project-media','10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001/quota-5.wav','10000000-0000-4000-8000-000000000001','{"size":20971520}');
     raise exception using errcode='XX000',message='FAIL total cloud quota';
   exception when raise_exception then if sqlerrm<>'CLOUD_QUOTA_EXCEEDED' then raise; end if; end;
 end $$;
@@ -123,7 +127,7 @@ do $$ begin
     raise exception using errcode='XX000',message='FAIL membership escalation';
   exception when insufficient_privilege then null; end;
   begin
-    insert into storage.objects(bucket_id,name,metadata) values('project-media','10000000-0000-4000-8000-000000000002/20000000-0000-4000-8000-000000000001/attack.wav','{"size":10}');
+    insert into storage.objects(bucket_id,name,owner_id,metadata) values('project-media','10000000-0000-4000-8000-000000000002/20000000-0000-4000-8000-000000000001/attack.wav','10000000-0000-4000-8000-000000000002','{"size":10}');
     raise exception using errcode='XX000',message='FAIL cross-user media write';
   exception when insufficient_privilege then null; end;
   if private.can_read_project(private.realtime_project('project:20000000-0000-4000-8000-000000000001')) then raise exception 'FAIL realtime access predicate'; end if;

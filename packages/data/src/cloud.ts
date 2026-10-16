@@ -67,7 +67,49 @@ export class CloudService {
     await this.requireCurrentAccount(account);
     const rows = (data ?? []) as CloudProject[]; rows.forEach(row => assertValidProject(row.snapshot)); return rows;
   }
-  async listProjects(): Promise<CloudProject[]> { return this.projectsFor(await this.verifiedAccount()); }
+  async listProjects(expectedUserId?: string): Promise<CloudProject[]> { return this.projectsFor(await this.verifiedAccount(expectedUserId)); }
+  /** Each operation is bound to the verified caller, even during an account switch. */
+  async authenticatedRpc<T = unknown>(name: string, args: Record<string, unknown>, expectedUserId: string): Promise<T> {
+    const account = await this.verifiedAccount(expectedUserId); await this.requireCurrentAccount(account);
+    const { data, error } = await this.client.rpc(name, args).setHeader('Authorization', `Bearer ${account.accessToken}`);
+    fail(error); await this.requireCurrentAccount(account); return data as T;
+  }
+  async getProject(id: string, expectedUserId: string): Promise<CloudProject> {
+    const account = await this.verifiedAccount(expectedUserId); await this.requireCurrentAccount(account);
+    const { data, error } = await this.client.from('projects').select('id,owner_id,title,snapshot,revision,archived_at').eq('id', id).single().setHeader('Authorization', `Bearer ${account.accessToken}`);
+    fail(error); await this.requireCurrentAccount(account);
+    const row = data as CloudProject;
+    if (!row || row.archived_at || !Number.isSafeInteger(row.revision) || row.revision < 1) throw new Error('Dieses Cloud-Projekt ist nicht verfügbar.');
+    assertValidProject(row.snapshot); return row;
+  }
+  async uploadMedia(path: string, bytes: ArrayBuffer, mimeType: string, expectedUserId: string): Promise<void> {
+    if (!Number.isSafeInteger(bytes.byteLength) || bytes.byteLength < 1 || bytes.byteLength > 20 * 1024 * 1024) throw new Error('Musikdateien dürfen höchstens 20 MB groß sein.');
+    const account = await this.verifiedAccount(expectedUserId); await this.requireCurrentAccount(account);
+    const { error } = await this.client.storage.from('project-media').upload(path, bytes, {
+      contentType: mimeType, upsert: false, cacheControl: '0', headers: { Authorization: `Bearer ${account.accessToken}` },
+    });
+    await this.requireCurrentAccount(account);
+    if (error) {
+      // A lost acknowledgement may leave the immutable object present. Retry
+      // succeeds only if the server's original bytes are exactly the same.
+      if (error.message.includes('already exists') || ('statusCode' in error && ['409', 'Duplicate'].includes(String(error.statusCode)))) {
+        const existing = await this.downloadMedia(path, bytes.byteLength, expectedUserId);
+        const a = new Uint8Array(existing), b = new Uint8Array(bytes);
+        if (a.length !== b.length || a.some((value, index) => value !== b[index])) throw new Error('Unter dieser Musikkennung liegt eine andere Datei. Die vorhandene Musik wurde nicht überschrieben.');
+      } else fail(error);
+    }
+  }
+  async downloadMedia(path: string, expectedBytes: number, expectedUserId: string): Promise<ArrayBuffer> {
+    if (!Number.isSafeInteger(expectedBytes) || expectedBytes < 1 || expectedBytes > 20 * 1024 * 1024) throw new Error('Ungültige Größe der Musikdatei.');
+    const account = await this.verifiedAccount(expectedUserId); await this.requireCurrentAccount(account);
+    // storage-js forwards fetch parameters unchanged; the real-SDK regression
+    // test checks this explicit header survives its fetchWithAuth wrapper.
+    const parameters = { headers: { Authorization: `Bearer ${account.accessToken}` }, cache: 'no-store' as const };
+    const { data, error } = await this.client.storage.from('project-media').download(path, {}, parameters);
+    fail(error); await this.requireCurrentAccount(account);
+    if (!data || data.size !== expectedBytes) throw new Error('Die Cloud-Musik ist unvollständig oder passt nicht zum Projekt.');
+    const bytes = await data.arrayBuffer(); await this.requireCurrentAccount(account); return bytes;
+  }
   sync(repository: ProjectRepository): Promise<SyncResult> {
     const active = this.syncing.get(repository); if (active) return active;
     const work = this.flush(repository).finally(() => this.syncing.delete(repository)); this.syncing.set(repository, work); return work;
