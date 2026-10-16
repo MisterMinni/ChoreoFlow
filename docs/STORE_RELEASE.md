@@ -1,0 +1,15 @@
+# iPhone and Store preparation
+
+Status: the owner uses Expo username `BastianExpo` and has created [choreoflow/bastianexpo](https://expo.dev/accounts/choreoflow/projects/bastianexpo). After the owner's Expo login, the dashboard confirmed owner `choreoflow`, slug `bastianexpo` and project UUID `733a2847-f234-4b34-bbf5-d7036b6d922f`. These values are set in `apps/app/app.config.ts`, and the resolved Expo configuration was verified. A confirmed bundle identifier is still missing. No Apple account has been connected, and no signed build, native runtime test, StoreKit implementation or Store submission has occurred.
+
+The app is configured with Expo/EAS development and production variants. The verified EAS project UUID is configured as `extra.eas.projectId`; set the real `APP_BUNDLE_IDENTIFIER` before native signing. Development app uses a `.dev` bundle suffix and a separate URL scheme, allowing parallel installation. An identifier is not a registration; the owner must confirm identifiers against their Apple account.
+
+The existing EAS project is now linked locally. Next, agree on and register the real base bundle identifier with Apple and supply that identifier. Do not create a duplicate EAS project. No placeholder identifier is treated as registered. Configure and test native Auth return links after these choices are settled. Project linkage alone does not create or sign a native build.
+
+Run `npm run dev:iphone` only after installing a signed development build. It starts Metro and does not purchase a build or launch an iOS simulator on Windows. Building/signing through EAS requires an Expo account and the appropriate Apple signing access; it may consume plan quotas. Build renewal and provisioning expiration remain the owner's operational responsibility.
+
+Release blockers: real iPhone tests for touch, GL/3D, SQLite persistence, file/media import, audio interruption, exports and accessibility; StoreKit 2 purchase/restore plus verified App Store server notifications; account deletion, Apple sign-in, production SMTP and separate production Supabase; verified localized product prices; real legal/support/business/contact data and App Review requirements. No fictional IDs, contact data or purchase success responses are provided.
+
+Brevo is the selected mail provider, temporarily using the owner's nominated Gmail address without recording that address in the repository. Brevo rewrites this unauthenticatable sender domain to `brevosend.com`; a custom sender domain is deferred and no domain purchase is required for the current test. Sender verification, SMTP credentials, Auth-link tracking settings and delivery testing remain outstanding. Follow [MAIL_SETUP.md](./MAIL_SETUP.md); this temporary setup is not production SMTP acceptance.
+
+Sources: [development builds](https://docs.expo.dev/develop/development-builds/introduction/), [using a development build](https://docs.expo.dev/develop/development-builds/use-development-builds/), [multiple variants](https://docs.expo.dev/tutorial/eas/multiple-app-variants/). Recheck Apple requirements when release work begins.

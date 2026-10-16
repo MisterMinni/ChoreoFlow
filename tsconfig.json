@@ -1,0 +1,21 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["node", "react"],
+    "noEmit": true,
+    "paths": {
+      "@choreoflow/core": ["./packages/core/src/index.ts"],
+      "@choreoflow/data": ["./packages/data/src/index.ts"],
+      "@choreoflow/ui": ["./packages/ui/src/index.tsx"]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "tests/**/*.ts",
+    "playwright.config.ts"
+  ]
+}
